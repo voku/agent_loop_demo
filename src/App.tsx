@@ -123,7 +123,7 @@ export default function App() {
   const [terminalHistory, setTerminalHistory] = useState<TerminalLine[]>([
     {
       type: "warning",
-      text: "⚡ GOVERNED AGENT WORKSPACE PROTOCOL v3.0 ONLINE."
+      text: "⚡ GOVERNED AGENT WORKSPACE PROTOCOL ONLINE."
     },
     {
       type: "output",
