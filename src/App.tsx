@@ -7,14 +7,19 @@ import React, { useState, useEffect } from "react";
 import AgentMonitor from "./components/AgentMonitor";
 import Terminal from "./components/Terminal";
 import FileSystem from "./components/FileSystem";
-import { VirtualFile, TerminalLine } from "./types";
+import LandingPage from "./components/LandingPage";
+import { VirtualFile, TerminalLine, StepId } from "./types";
 import {
   getInitialFiles,
   getBoardFiles,
-  getSessionFiles,
+  getPlanFiles,
+  getApproveFiles,
   getRecallFiles,
   getWorkDoneFiles,
-  getLearningApprovedFiles
+  getVerifyFiles,
+  getCloseFiles,
+  getLearningApprovedFiles,
+  getMemoryFiles
 } from "./data/virtualWorkspace";
 import {
   Terminal as TermIcon,
@@ -29,38 +34,104 @@ import {
   ArrowRight,
   BookOpen,
   Sparkles,
-  Award
+  Award,
+  Activity,
+  History,
+  Check,
+  Lock,
+  RefreshCw,
+  GitPullRequest
 } from "lucide-react";
 
 export default function App() {
   // Simulator State
-  const [isInstalled, setIsInstalled] = useState<boolean>(false);
+  const [viewMode, setViewMode] = useState<"landing" | "sandbox">("landing");
   const [files, setFiles] = useState<VirtualFile[]>(getInitialFiles());
   const [activeFilePath, setActiveFilePath] = useState<string>("src/Signup.php");
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [humanReviewStage, setHumanReviewStage] = useState<"hidden" | "propose_patch" | "propose_learn" | "completed">("hidden");
+  const [replanCount, setReplanCount] = useState<number>(0);
+  const [activeStep, setActiveStep] = useState<StepId>("init");
+  const [isAutoRunning, setIsAutoRunning] = useState<boolean>(false);
+  const [codePatchRevision, setCodePatchRevision] = useState<number>(1);
   
-  // Stats
+  // Interactive human checkpoints
+  // "hidden" | "approve_brief" | "code_patch" | "revised_patch" | "findings" | "memory_policy" | "completed"
+  const [humanReviewStage, setHumanReviewStage] = useState<"hidden" | "approve_brief" | "code_patch" | "revised_patch" | "findings" | "memory_policy" | "completed">("hidden");
+
+  // Parse files present to determine step status
+  const isInstalled = files.some(f => f.path === "composer.json" && f.content.includes("voku/agent-loop"));
+  const hasBoard = files.some(f => f.path.startsWith("todo/cards/"));
+  const hasBrief = files.some(f => f.path === "session_plan/2026-07-14-demo-1/work-brief.json");
+  const hasRecall = files.some(f => f.path.startsWith("infra/doc/agent-learning/recall-output/"));
+  const hasWorkDone = files.some(f => f.path === "src/Signup.php" && f.content.includes("declare(strict_types=1);")) && codePatchRevision === 2;
+  const hasVerify = files.some(f => f.path === "session_plan/2026-07-14-demo-1/verification_summary.json");
+  const hasClose = files.some(f => f.path === "session_plan/2026-07-14-demo-1/DEMO-1_report.json");
+  const hasLearnings = files.some(f => f.path === "infra/doc/agent-learning/findings.json");
+  const hasMemory = files.some(f => f.path === "infra/doc/agent-learning/proposals/candidate/proposal.2026-07-14.001.json");
+
+  // Determine current brief status
+  let briefStatus = "N/A";
+  const briefFile = files.find(f => f.path === "session_plan/2026-07-14-demo-1/work-brief.json");
+  if (briefFile) {
+    try {
+      const parsed = JSON.parse(briefFile.content);
+      briefStatus = parsed.status || "candidate";
+    } catch (e) {
+      // fallback
+    }
+  }
+
+  // Calculate strict step index (0-9) to determine exactly where we are
+  let currentStepIdx = 0;
+  if (!isInstalled) {
+    currentStepIdx = 0;
+  } else if (!hasBoard) {
+    currentStepIdx = 1;
+  } else if (!hasBrief) {
+    currentStepIdx = 2;
+  } else if (briefStatus !== "approved") {
+    currentStepIdx = 3;
+  } else if (!hasRecall) {
+    currentStepIdx = 4;
+  } else if (!hasWorkDone) {
+    currentStepIdx = 5;
+  } else if (!hasVerify) {
+    currentStepIdx = 6;
+  } else if (!hasClose) {
+    currentStepIdx = 7;
+  } else if (!hasLearnings || humanReviewStage === "findings") {
+    currentStepIdx = 8;
+  } else if (humanReviewStage !== "completed") {
+    currentStepIdx = 9;
+  } else {
+    currentStepIdx = 10; // Complete
+  }
+
+  // Local clock state
   const [currentUtc, setCurrentUtc] = useState<string>("");
 
   useEffect(() => {
-    // Formats a clean date for our clock dashboard
     const now = new Date();
     setCurrentUtc(now.toUTCString().replace("GMT", "UTC"));
+    const interval = setInterval(() => {
+      const d = new Date();
+      setCurrentUtc(d.toUTCString().replace("GMT", "UTC"));
+    }, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   const [terminalHistory, setTerminalHistory] = useState<TerminalLine[]>([
     {
       type: "warning",
-      text: "⚡ ACME DEVELOPMENT PROTOCOL v2.8.4 STARTED."
+      text: "⚡ GOVERNED AGENT WORKSPACE PROTOCOL v3.0 ONLINE."
     },
     {
       type: "output",
-      text: "Acme Signup-Portal PHP Repository environment detected in sandbox.\nWe are tasked with solving DEMO-1: Add robust validation to Signup.php.\n\nTo prevent agent context from dissolving into terminal archaeology, we need voku/agent-loop.\n\n👉 INSTRUCTIONS: Click the command shortcuts below to initialize the workflow and see the live monitor update as memory is constrained into files."
+      text: "Acme Signup-Portal PHP environment detected. Backlog task DEMO-1 is unassigned.\n\nTo manage this session cleanly without drowning the coding agent in massive context buffers, we need a governed loop.\n\n👉 INSTRUCTIONS: Install the CLI and run the commands using the shortcuts below to step through the governed workflow. Watch the state dashboard reflect locked files and compiled outcomes."
     }
   ]);
 
-  // Terminal commands simulator engine
+  // Terminal command simulator engine
   const handleRunCommand = async (cmdString: string) => {
     if (isLoading) return;
     setIsLoading(true);
@@ -68,14 +139,14 @@ export default function App() {
     // Append user input
     setTerminalHistory((prev) => [...prev, { type: "input", text: cmdString }]);
 
-    // Short processing timeout to represent genuine PHP execution lag
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    // Simulated PHP runtime execution delay
+    await new Promise((resolve) => setTimeout(resolve, 600));
 
     const cleanCmd = cmdString.trim();
 
-    if (cleanCmd.startsWith("composer require")) {
-      // 1. Installation
-      setIsInstalled(true);
+    if (cleanCmd.startsWith("composer require voku/agent-loop")) {
+      // 1. Installation & Init
+      setActiveStep("init");
       const updatedFiles = getInitialFiles().map(file => {
         if (file.path === "composer.json") {
           return {
@@ -108,278 +179,614 @@ export default function App() {
 
       setTerminalHistory((prev) => [
         ...prev,
-        { type: "output", text: "Updating composer.json in sandboxed repository..." },
-        { type: "output", text: "Loading composer repositories with package information..." },
-        { type: "output", text: "Updating dependencies (including require-dev)" },
-        { type: "success", text: "  - Downloading voku/agent-loop (v1.4.0)" },
-        { type: "success", text: "  - Installing symfony/console (v6.4.5)" },
-        { type: "output", text: "Generating optimized autoload files" },
-        { type: "success", text: "Symfony CLI helper binary linked to: vendor/bin/agent-loop" },
-        { type: "output", text: "Package initialization finished. Ready to run board syncing." }
+        { type: "output", text: "Updating composer.json in isolated sandbox..." },
+        { type: "output", text: "Loading composer package index and caching local manifests..." },
+        { type: "success", text: "  - Installing the currently resolved voku/agent-loop release..." },
+        { type: "success", text: "  - Linking vendor/bin/agent-loop cli helper" },
+        { type: "output", text: "Running doctor check: vendor/bin/agent-loop init doctor" },
+        { type: "success", text: "[OK] agent-loop installed and vendor/bin/agent-loop is available." },
+        { type: "success", text: "[OK] Repository diagnostics passed." },
+        { type: "output", text: "Next: Inspect the backlog card using: vendor/bin/agent-loop board card show DEMO-1" }
       ]);
     } 
-    else if (cleanCmd.includes("board summary") || cleanCmd.includes("board:sync")) {
-      // 2. Board
+    else if (cleanCmd.includes("board card show")) {
+      // 2. Board Synced
       if (!isInstalled) {
         setTerminalHistory((prev) => [
           ...prev,
-          { type: "error", text: "bash: vendor/bin/agent-loop: No such file or directory. Please install voku/agent-loop first." }
+          { type: "error", text: "bash: vendor/bin/agent-loop: command not found. Run composer install require step first." }
         ]);
         setIsLoading(false);
         return;
       }
       setFiles(getBoardFiles());
-      setActiveFilePath(".agent-loop/board/DEMO-1.md");
+      setActiveStep("board");
+      setActiveFilePath("todo/cards/DEMO-1.md");
 
       setTerminalHistory((prev) => [
         ...prev,
-        { type: "output", text: "Scanning .agent-loop/board/ directory for markdown cards..." },
-        { type: "success", text: "[✔] Synced active card: .agent-loop/board/DEMO-1.md" },
-        { type: "output", text: "--------------------------------------------------------" },
-        { type: "output", text: "TASK: DEMO-1 | Add validation to signup form\nSTATUS: BACKLOG_READY" },
-        { type: "output", text: "--------------------------------------------------------" },
-        { type: "output", text: "Ready to assign task. Run session:start to initialize active memory." }
+        { type: "output", text: "Reading Kanban card todo/cards/DEMO-1.md..." },
+        { type: "success", text: "[✔] INSPECTED BACKLOG TASK: DEMO-1 Signup Validation guards." },
+        { type: "output", text: "Target Goal: Add secure validation guards to App\\Signup (Reject short passwords and invalid emails)." },
+        { type: "output", text: "State: BACKLOG_READY. Next: Plan governed workflow with: vendor/bin/agent-loop workflow plan DEMO-1" }
       ]);
     } 
-    else if (cleanCmd.includes("session start") || cleanCmd.includes("session:start")) {
-      // 3. Session
+    else if (cleanCmd.includes("workflow plan")) {
+      // 3. Plan Work Brief
       if (!isInstalled) {
         setTerminalHistory((prev) => [
           ...prev,
-          { type: "error", text: "bash: vendor/bin/agent-loop: No such file. Install voku/agent-loop first." }
+          { type: "error", text: "Package not installed." }
         ]);
         setIsLoading(false);
         return;
       }
-      setFiles(getSessionFiles());
-      setActiveFilePath(".agent-loop/sessions/DEMO-1/plan.md");
+      setFiles(getPlanFiles());
+      setActiveStep("plan");
+      setActiveFilePath("session_plan/2026-07-14-demo-1/work-brief.json");
 
       setTerminalHistory((prev) => [
         ...prev,
-        { type: "output", text: "Initializing isolated active workspace session for DEMO-1..." },
-        { type: "success", text: "  + Created: .agent-loop/sessions/DEMO-1/plan.md" },
-        { type: "success", text: "  + Created: .agent-loop/sessions/DEMO-1/decisions.md" },
-        { type: "success", text: "  + Created: .agent-loop/sessions/DEMO-1/assumptions.md" },
-        { type: "output", text: "Durable intent locked. Active session directory is populated." },
-        { type: "success", text: "Session started. Ready to compile recall benchmarks (recall:compile)." }
+        { type: "output", text: "Compiling task parameters and planning workflow session..." },
+        { type: "success", text: "  + Created: session_plan/2026-07-14-demo-1/work-brief.json" },
+        { type: "success", text: "  + Created: session_plan/2026-07-14-demo-1/work-brief.md" },
+        { type: "output", text: "Work Brief Revision 1 candidate successfully drafted." },
+        { type: "warning", text: "AWAITING HUMAN APPROVAL GATES: Lars must approve or re-plan this brief spec before work begins." },
+        { type: "output", text: "Run: vendor/bin/agent-loop workflow approve DEMO-1 --by lars" }
       ]);
     } 
-    else if (cleanCmd.includes("recall compile") || cleanCmd.includes("recall:compile")) {
-      // 4. Recall
+    else if (cleanCmd.includes("workflow approve")) {
+      // 4. Human Approval Gate
       if (!isInstalled) {
         setTerminalHistory((prev) => [
           ...prev,
-          { type: "error", text: "bash: vendor/bin/agent-loop: Package not installed." }
+          { type: "error", text: "Package not installed." }
         ]);
         setIsLoading(false);
         return;
       }
-      setFiles(getRecallFiles());
-      setActiveFilePath(".agent-loop/recall/system.md");
-      setHumanReviewStage("propose_patch");
+      setActiveStep("approve");
+      setHumanReviewStage("approve_brief");
 
       setTerminalHistory((prev) => [
         ...prev,
-        { type: "output", text: "Reading repository benchmarks and knowledge maps..." },
-        { type: "output", text: "Aligning context files to DEMO-1 Acceptance Criteria..." },
-        { type: "success", text: "  + Written: .agent-loop/recall/system.md" },
-        { type: "success", text: "  + Written: .agent-loop/recall/validation-plan.md" },
-        { type: "success", text: "  + Written: .agent-loop/recall/meta.json" },
-        { type: "output", text: "Safe compiled context is ready! It excludes giant prompt soup." },
-        { type: "warning", text: "WAITING: Agent is proposing code fixes and tests are executing..." }
+        { type: "output", text: "Opening gated work-brief approval portal for lars..." },
+        { type: "warning", text: "WAITING FOR INPUT: Review brief revision in the panel above and choose to Approve or Request Re-plan." }
       ]);
     } 
-    else if (cleanCmd === "composer test") {
-      // 5. Validation Test Command
-      const isWorkDone = files.some(
+    else if (cleanCmd.includes("map build") || cleanCmd.includes("map query")) {
+      // 5. Recall compile & codebase maps
+      if (!isInstalled) {
+        setTerminalHistory((prev) => [
+          ...prev,
+          { type: "error", text: "Package not installed." }
+        ]);
+        setIsLoading(false);
+        return;
+      }
+
+      // Safeguard: must have brief
+      const hasPlanBrief = files.some(f => f.path === "session_plan/2026-07-14-demo-1/work-brief.json");
+      if (!hasPlanBrief) {
+        setTerminalHistory((prev) => [
+          ...prev,
+          { type: "error", text: "ERROR: No work brief exists. Run 'workflow plan' first." }
+        ]);
+        setIsLoading(false);
+        return;
+      }
+
+      setFiles(getRecallFiles(replanCount));
+      setActiveStep("recall");
+      setActiveFilePath(".agent-map/php-symbols.json");
+      setHumanReviewStage("code_patch"); // Trigger the code proposal checkpoint!
+
+      setTerminalHistory((prev) => [
+        ...prev,
+        { type: "output", text: "Inspecting recall artifacts created during workflow planning..." },
+        { type: "output", text: "  + Found: infra/doc/agent-learning/recall-output/2026-07-14-demo-1/system.md" },
+        { type: "output", text: "  + Found: infra/doc/agent-learning/recall-output/2026-07-14-demo-1/validation-plan.md" },
+        { type: "output", text: "  + Found: infra/doc/agent-learning/recall-output/2026-07-14-demo-1/recall-log.draft.json" },
+        { type: "output", text: "" },
+        { type: "output", text: "Building compact PHP symbol map..." },
+        { type: "success", text: "  + Written: .agent-map/php-symbols.json" },
+        { type: "success", text: "  + Found: App\\Signup" },
+        { type: "output", text: "" },
+        { type: "warning", text: "SIMULATOR HARNESS:\nAn external coding agent formulated a proposed patch using the approved\nwork brief, recall briefing and symbol map." },
+        { type: "output", text: "Inspect and click 'Approve & Apply Code Patch' on the Checkpoint Card above to apply changes." }
+      ]);
+    } 
+    else if (cleanCmd === "composer test" || cleanCmd.includes("composer test")) {
+      // 6. Test suite
+      const hasPatchedCode = files.some(
         (f) => f.path === "src/Signup.php" && f.content.includes("declare(strict_types=1);")
       );
 
-      if (!isWorkDone) {
-        // Failing tests
+      if (!hasPatchedCode) {
         setTerminalHistory((prev) => [
           ...prev,
           { type: "output", text: "vendor/bin/phpunit --colors=always" },
           { type: "warning", text: "PHPUnit 10.5.15 by Sebastian Bergmann and contributors." },
-          { type: "output", text: "Runtime: PHP 8.2.14" },
-          { type: "error", text: "F.F.  2 / 4 tests passed (FAILURES DETECTED)" },
-          { type: "error", text: "1) App\\Test\\SignupTest::testRegisterWithShortPassword\n   Failed asserting that empty signups are rejected by Signup.php." },
-          { type: "error", text: "2) App\\Test\\SignupTest::testRegisterWithGarbageEmail\n   Failed: Signups can be completed using invalid email inputs." },
-          { type: "warning", text: "PHPStan Static Analysis (Level 5): 1 error in src/Signup.php" },
-          { type: "error", text: "  - Method register() lacks validation guards on array inputs." }
+          { type: "error", text: "F.F.  2 / 4 tests passed (FAILURES ENCOUNTERED)" },
+          { type: "error", text: "1) App\\Test\\SignupTest::testRegisterWithShortPassword\n   Failed asserting that empty passwords are rejected by App\\Signup." },
+          { type: "error", text: "2) App\\Test\\SignupTest::testRegisterWithGarbageEmail\n   Failed asserting that signup rejects bad domain structures." },
+          { type: "warning", text: "PHPStan Static Analysis (Level 5): 1 error" },
+          { type: "error", text: "  - Method App\\Signup::register() lacks typehints and strict validation guards." },
+          { type: "warning", text: "Awaiting patch. Click 'Approve & Apply Code Patch' on the Checkpoint Card above to revise src/Signup.php." }
         ]);
-      } else {
-        // Passing tests
+        setIsLoading(false);
+        return;
+      }
+
+      if (codePatchRevision === 1) {
         setTerminalHistory((prev) => [
           ...prev,
           { type: "output", text: "vendor/bin/phpunit --colors=always" },
-          { type: "output", text: "Runtime: PHP 8.2.14" },
-          { type: "success", text: "....  4 / 4 tests passed successfully!" },
-          { type: "success", text: "✔ testRegisterWithValidDetails passed" },
-          { type: "success", text: "✔ testRegisterWithShortPassword rejected" },
-          { type: "success", text: "✔ testRegisterWithGarbageEmail rejected" },
-          { type: "success", text: "✔ PHPStan Static Analysis: OK (Strict level 5 passed)" }
+          { type: "warning", text: "PHPUnit 10.5.15 by Sebastian Bergmann and contributors." },
+          { type: "error", text: "F.F.  2 / 4 tests passed (FAILURES ENCOUNTERED)" },
+          { type: "error", text: "1) App\\Test\\SignupTest::testRegisterWithShortPassword\n   Failed asserting that empty passwords are rejected by App\\Signup." },
+          { type: "error", text: "2) App\\Test\\SignupTest::testRegisterWithGarbageEmail\n   Failed asserting that signup rejects bad domain structures." },
+          { type: "error", text: "PHPStan Static Analysis (Level 5): 1 error" },
+          { type: "error", text: "  - Method App\\Signup::register() lacks typehints and strict validation guards." },
+          { type: "error", text: "\nTests failed." },
+          { type: "warning", text: "\nSimulation Gate: Tests failed with initial patch. External coding agent compiled a revised patch to address failures." },
+          { type: "warning", text: "Awaiting gated confirmation: Review and click 'Approve & Apply Revised Code Patch' on the Checkpoint Card above." }
         ]);
-      }
-    } 
-    else if (cleanCmd.includes("verify --strict") || cleanCmd.includes("verify")) {
-      // 6. Verify Loop State
-      if (!isInstalled) {
-        setTerminalHistory((prev) => [
-          ...prev,
-          { type: "error", text: "Command failed. Install the loop CLI package first." }
-        ]);
-        setIsLoading(false);
-        return;
-      }
-
-      const isWorkDone = files.some(
-        (f) => f.path === "src/Signup.php" && f.content.includes("declare(strict_types=1);")
-      );
-
-      if (!isWorkDone) {
-        setTerminalHistory((prev) => [
-          ...prev,
-          { type: "output", text: "Verifying active workspace loop boundaries..." },
-          { type: "success", text: "  ✔ Local boards verified" },
-          { type: "success", text: "  ✔ Active Session memory file checks passed" },
-          { type: "success", text: "  ✔ Recall briefings compiled" },
-          { type: "error", text: "  ✖ Code validation failing: Unit tests are broken in Signup.php" },
-          { type: "warning", text: "State: INVALID. Solve PHP Unit failures before review checkin." }
-        ]);
+        setHumanReviewStage("revised_patch");
+        setIsAutoRunning(false);
       } else {
         setTerminalHistory((prev) => [
           ...prev,
-          { type: "output", text: "Verifying active workspace loop boundaries (--strict)..." },
-          { type: "success", text: "  ✔ Local boards verified" },
-          { type: "success", text: "  ✔ Active Session memory file checks passed" },
-          { type: "success", text: "  ✔ Recall briefings compiled" },
-          { type: "success", text: "  ✔ Code validation verified (Unit-tests and PHPStan OK)" },
-          { type: "success", text: "WORKFLOW STATE VERIFIED. Human approval pathway unlocked." }
+          { type: "output", text: "vendor/bin/phpunit --colors=always" },
+          { type: "warning", text: "PHPUnit 10.5.15 by Sebastian Bergmann and contributors." },
+          { type: "success", text: ".... 4 / 4 tests passed (SUCCESS)" },
+          { type: "success", text: "PHPStan Static Analysis (Level 5): 0 errors (Passed)" },
+          { type: "success", text: "\nTests passed! The revised code patch successfully resolved all verification issues." },
+          { type: "output", text: "\nTest suite verified. Next: Log Outcomes with 'vendor/bin/agent-loop recall log-outcome'" }
         ]);
-        setHumanReviewStage("propose_learn");
+        setActiveStep("verify");
       }
     } 
-    else if (cleanCmd.includes("learn validate") || cleanCmd.includes("learn:persist") || cleanCmd.includes("learn:validate")) {
-      // 7. Learning Proposal
+    else if (cleanCmd.includes("recall log-outcome")) {
+      // 7. Outcomes Record
       if (!isInstalled) {
         setTerminalHistory((prev) => [
           ...prev,
-          { type: "error", text: "Not installed." }
+          { type: "error", text: "Package not installed." }
         ]);
         setIsLoading(false);
         return;
       }
 
+      setFiles(getVerifyFiles(replanCount));
+      setActiveStep("verify");
+      setActiveFilePath("session_plan/2026-07-14-demo-1/verification_summary.json");
+
       setTerminalHistory((prev) => [
         ...prev,
-        { type: "output", text: "Searching workspace journals for temporary session logs..." },
-        { type: "output", text: "Found observation: PHPStan failed initially due to loose return types." },
-        { type: "warning", text: "Proposing finding elevation to global learning-root..." },
-        { type: "output", text: "Approve finding in the central dashboard (under Knowledge Base tab) to convert it to a durable rule!" }
+        { type: "output", text: "Logging guidelines outcomes to recall outcome journals with --commit..." },
+        { type: "success", text: "  ✔ Committed recall log outcomes using working-tree" },
+        { type: "output", text: "\nRecording learning decision via session manager:" },
+        { type: "output", text: "  vendor/bin/agent-loop session record DEMO-1 \\\n    --kind decision \\\n    --title \"Enforce strict validation guards\" \\\n    --body \"Enforce strict validation guards on server-side registrations to mitigate garbage input.\"" },
+        { type: "success", text: "  ✔ Session decision recorded durably." },
+        { type: "output", text: "\nGenerating verification projection..." },
+        { type: "success", text: "  + Written: session_plan/2026-07-14-demo-1/verification_summary.json (Simulator-generated verification projection)" },
+        { type: "success", text: "  ✔ consistency_verify: Tasks, sessions, and work brief are fully aligned." },
+        { type: "success", text: "  ✔ PHPUnit unit tests: 4 / 4 checks passed." },
+        { type: "success", text: "  ✔ PHPStan analysis: Level 5 strict checks passed." },
+        { type: "output", text: "\n[✔] WORKFLOW STATE STABLE. Next: Close session with:\n  vendor/bin/agent-loop verify --strict && vendor/bin/agent-loop workflow report DEMO-1 && vendor/bin/agent-loop workflow close DEMO-1 --status done" }
       ]);
-      setHumanReviewStage("propose_learn");
+    } 
+    else if (cleanCmd.includes("workflow close") || cleanCmd.includes("verify --strict") || cleanCmd.includes("workflow report") || cleanCmd.includes("review blindspots")) {
+      // 8. Close / Report
+      if (!isInstalled) {
+        setTerminalHistory((prev) => [
+          ...prev,
+          { type: "error", text: "Package not installed." }
+        ]);
+        setIsLoading(false);
+        return;
+      }
+      setFiles(getCloseFiles(replanCount));
+      setActiveStep("close");
+      setActiveFilePath("session_plan/2026-07-14-demo-1/DEMO-1_report.json");
+
+      setTerminalHistory((prev) => [
+        ...prev,
+        { type: "output", text: "Executing: vendor/bin/agent-loop review blindspots DEMO-1..." },
+        { type: "success", text: "[OK] Blind spots analysis complete: no critical gaps identified." },
+        { type: "output", text: "\nRunning rigid verification gates..." },
+        { type: "success", text: "[OK] All verification rules passed." },
+        { type: "output", text: "\nRunning workflow report DEMO-1..." },
+        { type: "success", text: "Simulator captured workflow report:\n  session_plan/2026-07-14-demo-1/DEMO-1_report.json" },
+        { type: "output", text: "\nClosing workflow session DEMO-1..." },
+        { type: "success", text: "[OK] Session closed with status: done." },
+        { type: "output", text: "\nNext: Validate learning candidates with:\n  vendor/bin/agent-loop learn validate --root infra/doc/agent-learning" }
+      ]);
+    } 
+    else if (cleanCmd.includes("learn validate")) {
+      // 9. Learn layer findings
+      if (!isInstalled) {
+        setTerminalHistory((prev) => [
+          ...prev,
+          { type: "error", text: "Package not installed." }
+        ]);
+        setIsLoading(false);
+        return;
+      }
+      setFiles(getLearningApprovedFiles(replanCount));
+      setActiveStep("learn");
+      setActiveFilePath("infra/doc/agent-learning/findings/finding.2026-07-14.001.json");
+      setHumanReviewStage("findings");
+
+      setTerminalHistory((prev) => [
+        ...prev,
+        { type: "output", text: "External agent or human created findings artifact:" },
+        { type: "output", text: "  + File: infra/doc/agent-learning/findings/finding.2026-07-14.001.json" },
+        { type: "output", text: "\nRunning validation: vendor/bin/agent-loop learn validate --root infra/doc/agent-learning" },
+        { type: "success", text: "[OK] validated: finding.2026-07-14.001.json" },
+        { type: "output", text: "\nNext: Evaluate and write promotion candidates using:\n  vendor/bin/agent-loop learn guidance-evaluate --root infra/doc/agent-learning --write-candidates" }
+      ]);
+    } 
+    else if (cleanCmd.includes("learn guidance-evaluate") || cleanCmd.includes("guidance-evaluate")) {
+      // 10. Memory Promote/Forget
+      if (!isInstalled) {
+        setTerminalHistory((prev) => [
+          ...prev,
+          { type: "error", text: "Package not installed." }
+        ]);
+        setIsLoading(false);
+        return;
+      }
+      setFiles(getMemoryFiles(replanCount, false));
+      setActiveStep("memory");
+      setActiveFilePath("infra/doc/agent-learning/proposals/candidate/proposal.2026-07-14.001.json");
+      setHumanReviewStage("memory_policy");
+
+      setTerminalHistory((prev) => [
+        ...prev,
+        { type: "output", text: "Evaluating pending findings candidates for global guidelines promotion:" },
+        { type: "output", text: "  vendor/bin/agent-loop learn guidance-evaluate --root infra/doc/agent-learning --write-candidates" },
+        { type: "output", text: "Evaluating recall usefulness and scanning outcomes journals..." },
+        { type: "success", text: "  + Written candidate proposal: infra/doc/agent-learning/proposals/candidate/proposal.2026-07-14.001.json" },
+        { type: "warning", text: "\nProposal status is: candidate" },
+        { type: "warning", text: "Awaiting gated confirmation: Click 'Confirm Memory Update' on the Checkpoint Card above to run vendor/bin/agent-loop learn proposal-approve." }
+      ]);
     } 
     else {
       setTerminalHistory((prev) => [
         ...prev,
-        { type: "output", text: `Executing standard prompt: ${cleanCmd}` },
-        { type: "warning", text: "Command recognized, but no custom agent-loop step tied to it." }
+        { type: "output", text: `Executing: ${cleanCmd}` },
+        { type: "warning", text: "Command executed, but no custom step mapping tied to it in this sandbox." }
       ]);
     }
 
     setIsLoading(false);
   };
 
+  // Automated agent loop sequence driver
+  useEffect(() => {
+    if (!isAutoRunning || isLoading) return;
+
+    const timer = setTimeout(() => {
+      if (currentStepIdx === 0) {
+        handleRunCommand("composer require voku/agent-loop && vendor/bin/agent-loop init doctor");
+        setActiveFilePath("composer.json");
+      } else if (currentStepIdx === 1) {
+        handleRunCommand("vendor/bin/agent-loop board card show DEMO-1");
+        setActiveFilePath("todo/cards/DEMO-1.md");
+      } else if (currentStepIdx === 2) {
+        handleRunCommand('vendor/bin/agent-loop workflow plan DEMO-1 --by lars --learning-root infra/doc/agent-learning --file src/Signup.php --goal "Add validation guards to App\\Signup." --scope src/Signup.php --validation "composer test" --validation "vendor/bin/phpstan analyse"');
+        setActiveFilePath("session_plan/2026-07-14-demo-1/work-brief.json");
+      } else if (currentStepIdx === 3) {
+        // Human Gate: Work brief approval
+        setIsAutoRunning(false);
+        setHumanReviewStage("approve_brief");
+      } else if (currentStepIdx === 4) {
+        handleRunCommand("vendor/bin/agent-loop map build --paths=src,tests && vendor/bin/agent-loop map query Signup");
+        setActiveFilePath(".agent-map/php-symbols.json");
+      } else if (currentStepIdx === 5) {
+        if (!hasWorkDone) {
+          // Human Gate: Code patch
+          setIsAutoRunning(false);
+          setHumanReviewStage("code_patch");
+        } else {
+          // Now runs tests automatically!
+          handleRunCommand("composer test && vendor/bin/phpstan analyse");
+          setActiveFilePath("src/Signup.php");
+        }
+      } else if (currentStepIdx === 6) {
+        handleRunCommand("vendor/bin/agent-loop recall log-outcome --root infra/doc/agent-learning --draft infra/doc/agent-learning/recall-output/2026-07-14-demo-1/recall-log.draft.json --by lars --commit working-tree");
+        setActiveFilePath("session_plan/2026-07-14-demo-1/verification_summary.json");
+      } else if (currentStepIdx === 7) {
+        handleRunCommand("vendor/bin/agent-loop verify --strict && vendor/bin/agent-loop workflow report DEMO-1 && vendor/bin/agent-loop workflow close DEMO-1 --status done");
+        setActiveFilePath("session_plan/2026-07-14-demo-1/DEMO-1_report.json");
+      } else if (currentStepIdx === 8) {
+        if (!hasLearnings) {
+          handleRunCommand("vendor/bin/agent-loop learn validate --root infra/doc/agent-learning");
+          setActiveFilePath("infra/doc/agent-learning/findings/finding.2026-07-14.001.json");
+        } else {
+          // Human Gate: Observation Triage Portal
+          setIsAutoRunning(false);
+          setHumanReviewStage("findings");
+        }
+      } else if (currentStepIdx === 9) {
+        if (!hasMemory) {
+          handleRunCommand("vendor/bin/agent-loop learn guidance-evaluate --root infra/doc/agent-learning --write-candidates");
+          setActiveFilePath("infra/doc/agent-learning/proposals/candidate/proposal.2026-07-14.001.json");
+        } else if (humanReviewStage !== "completed") {
+          // Human Gate: Confirm Permanent Rule Promotion
+          setIsAutoRunning(false);
+          setHumanReviewStage("memory_policy");
+        } else {
+          setIsAutoRunning(false);
+        }
+      } else {
+        setIsAutoRunning(false);
+      }
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [isAutoRunning, currentStepIdx, isLoading, hasWorkDone, hasLearnings, hasMemory, humanReviewStage, replanCount]);
+
   const handleResetSimulator = () => {
-    setIsInstalled(false);
+    setIsAutoRunning(false);
     setFiles(getInitialFiles());
     setActiveFilePath("src/Signup.php");
+    setReplanCount(0);
+    setActiveStep("init");
     setHumanReviewStage("hidden");
     setTerminalHistory([
       {
         type: "warning",
-        text: "💥 TERMINAL ARCHAEOLOGY CORRECTED. RE-ESTABLISHING COMPOSER BASELINE..."
+        text: "💥 WORKSPACE baselined. ALL TRANSITIVE FILES PURGED."
       },
       {
         type: "output",
-        text: "Sandbox reverted to original messy starting state.\nSelect 'Initialize agent-loop' below to show how developers declare boundaries to coding agents!"
+        text: "Sandbox reverted to raw, original starting state.\nSelect 'composer require voku/agent-loop' below to initialize diagnostics and see boundaries in action!"
       }
     ]);
   };
 
-  // Human Review interactive callbacks
-  const handleApproveCodePatch = () => {
-    setFiles(getWorkDoneFiles());
-    setActiveFilePath("src/Signup.php");
-    setHumanReviewStage("propose_learn");
+  // Human Review Gate Handlers
+  const handleApproveBrief = () => {
+    setFiles(getApproveFiles(replanCount));
+    setActiveFilePath("session_plan/2026-07-14-demo-1/work-brief.json");
+    setHumanReviewStage("hidden");
+    setIsAutoRunning(true);
+    
+    // Auto advance to compile recall step
     setTerminalHistory((prev) => [
       ...prev,
-      { type: "success", text: "👉 Human APPROVED agent's code proposal." },
-      { type: "output", text: "Applying proposed code patch to src/Signup.php..." },
-      { type: "output", text: "Patch successfully written. Re-run validations with: composer test" }
+      { type: "success", text: `✔ Human APPROVED Work Brief Revision ${replanCount === 0 ? '1' : '2'}.` },
+      { type: "output", text: `Contract locked. Ready to compile codebase maps. Run: vendor/bin/agent-loop map build --paths=src,tests && vendor/bin/agent-loop map query Signup` }
     ]);
+  };
+
+  const handleReplanAndSupersede = () => {
+    if (replanCount === 0) {
+      setReplanCount(1);
+      // set files to represent superseded rev1 and candidate rev2
+      setFiles([
+        ...getBoardFiles(),
+        {
+          name: "rev1_work-brief.json",
+          path: "session_plan/2026-07-14-demo-1/work-brief-history/rev1_work-brief.json",
+          category: "session",
+          language: "json",
+          content: `{
+  "taskId": "DEMO-1",
+  "revision": 1,
+  "status": "superseded",
+  "brief": {
+    "goal": "Add secure server-side verification to Signup.php, validating emails and password lengths.",
+    "context": "PHP 8.2 backend, ACME signup system, existing failing PHPUnit tests.",
+    "expectedResult": "Successful registration for valid details, standard rejection errors for empty/malformed inputs.",
+    "scope": [
+      "src/Signup.php"
+    ],
+    "nonGoals": [
+      "Client-side JS validation"
+    ],
+    "validation": [
+      "vendor/bin/phpunit"
+    ]
+  },
+  "supersededBy": "session_plan/2026-07-14-demo-1/work-brief.json",
+  "reason": "Re-planned to add PHPStan and strict-type rules into the goals definition."
+}`
+        },
+        {
+          name: "work-brief.json",
+          path: "session_plan/2026-07-14-demo-1/work-brief.json",
+          category: "session",
+          language: "json",
+          content: `{
+  "taskId": "DEMO-1",
+  "revision": 2,
+  "status": "candidate",
+  "brief": {
+    "goal": "Add secure server-side validation to Signup.php with strict typing, fully passing PHPStan Level 5.",
+    "context": "PHP 8.2 backend, strict types requirement, existing failing PHPUnit tests.",
+    "expectedResult": "Unified return values, clear error logging, all unit and static checks passing.",
+    "scope": [
+      "src/Signup.php"
+    ],
+    "nonGoals": [
+      "Client-side JS validation",
+      "Database schema adjustments"
+    ],
+    "validation": [
+      "composer test",
+      "vendor/bin/phpstan analyse"
+    ]
+  }
+}`
+        }
+      ]);
+      setActiveFilePath("session_plan/2026-07-14-demo-1/work-brief.json");
+      setTerminalHistory((prev) => [
+        ...prev,
+        { type: "warning", text: "⚠ Human clicked Re-plan & Modify." },
+        { type: "error", text: "Revision 1 candidate has been INVALIDATED and status is now SUPERSEDED." },
+        { type: "output", text: "Generating Revision 2: Candidate with upgraded static checking requirements under session_plan/2026-07-14-demo-1/." },
+        { type: "output", text: "Review the updated Work Brief Revision 2 candidate above." }
+      ]);
+    }
+  };
+
+  const handleApproveCodePatch = () => {
+    // Write partial/faulty patch first
+    const baseFiles = getRecallFiles(replanCount);
+    const faultyFiles = baseFiles.map(f => {
+      if (f.path === "src/Signup.php") {
+        return {
+          ...f,
+          content: `<?php
+
+declare(strict_types=1);
+
+namespace App;
+
+class Signup {
+    private array $errors = [];
+
+    public function register(array $data): bool {
+        // Partial implementation: only checks empty values, misses regex domain format and min length
+        $email = trim($data['email'] ?? '');
+        $password = $data['password'] ?? '';
+
+        if (empty($email)) {
+            $this->errors[] = "Email is required.";
+        }
+
+        if (empty($password)) {
+            $this->errors[] = "Password is required.";
+        }
+
+        return empty($this->errors);
+    }
+
+    public function getErrors(): array {
+        return $this->errors;
+    }
+}`
+        };
+      }
+      return f;
+    });
+
+    setFiles(faultyFiles);
+    setCodePatchRevision(1);
+    setActiveFilePath("src/Signup.php");
+    setHumanReviewStage("hidden");
+    setIsAutoRunning(true);
+    
+    setTerminalHistory((prev) => [
+      ...prev,
+      { type: "success", text: "✔ Human APPROVED agent's initial proposed code patch." },
+      { type: "output", text: "Applying patch to src/Signup.php..." },
+      { type: "success", text: "Signup.php updated with initial validation skeleton." }
+    ]);
+    
+    setTimeout(() => {
+      handleRunCommand("composer test && vendor/bin/phpstan analyse");
+    }, 500);
+  };
+
+  const handleApproveRevisedPatch = () => {
+    setFiles(getWorkDoneFiles(replanCount));
+    setCodePatchRevision(2);
+    setActiveFilePath("src/Signup.php");
+    setHumanReviewStage("hidden");
+    setIsAutoRunning(true);
+
+    setTerminalHistory((prev) => [
+      ...prev,
+      { type: "success", text: "✔ Human APPROVED revised patch." },
+      { type: "output", text: "Applying revised patch to src/Signup.php..." },
+      { type: "success", text: "Signup.php updated with complete server-side email regex structure and password length checks." }
+    ]);
+
+    setTimeout(() => {
+      handleRunCommand("composer test && vendor/bin/phpstan analyse");
+    }, 500);
   };
 
   const handleRejectCodePatch = () => {
     setTerminalHistory((prev) => [
       ...prev,
-      { type: "error", text: "👉 Human REJECTED agent's code proposal. Plan is being re-evaluated." }
+      { type: "error", text: "✖ Human REJECTED code proposal. Agent is re-evaluating." }
     ]);
   };
 
-  const handleApproveDurableLearning = () => {
-    setFiles(getLearningApprovedFiles());
-    setActiveFilePath(".agent-loop/learning/findings.json");
+  const handlePersistFinding = () => {
+    setFiles(getLearningApprovedFiles(replanCount));
+    setActiveFilePath("infra/doc/agent-learning/findings/finding.2026-07-14.001.json");
+    setHumanReviewStage("hidden");
+    setIsAutoRunning(true);
+    setTerminalHistory((prev) => [
+      ...prev,
+      { type: "success", text: "✔ Finding proposal finding.2026-07-14.001 validated and persisted durably." },
+      { type: "output", text: "Learnings written to infra/doc/agent-learning/findings/finding.2026-07-14.001.json. Next: Evaluate promotion guidance with 'vendor/bin/agent-loop learn guidance-evaluate'" }
+    ]);
+  };
+
+  const handleConfirmPromotions = () => {
+    setFiles(getMemoryFiles(replanCount, true));
+    setActiveFilePath("infra/doc/agent-learning/proposals/candidate/proposal.2026-07-14.001.json");
     setHumanReviewStage("completed");
     setTerminalHistory((prev) => [
       ...prev,
-      { type: "success", text: "👉 Human APPROVED durable learning. Finding elevated to findings.json!" },
-      { type: "output", text: "Rule created: Strict method typings on SignUp guards enforced in root database." },
-      { type: "success", text: "Agent session loop gracefully completed and safely archived. 🚀" }
+      { type: "output", text: "Executing: vendor/bin/agent-loop learn proposal-approve --root infra/doc/agent-learning proposal.2026-07-14.001 --by lars" },
+      { type: "success", text: "✔ Proposal proposal.2026-07-14.001 status updated to 'approved'." },
+      { type: "success", text: "Durable guidance proposal approved.\n\nThe proposal is ready for external implementation and validation. No repository guidance or active constraint was modified automatically." }
     ]);
   };
 
-  const hasBoard = files.some((f) => f.path.startsWith(".agent-loop/board/"));
-  const hasSession = files.some((f) => f.path.startsWith(".agent-loop/sessions/"));
-  const hasRecall = files.some((f) => f.path.startsWith(".agent-loop/recall/"));
-  const hasWorkDone = files.some(
-    (f) => f.path === "src/Signup.php" && f.content.includes("declare(strict_types=1);")
-  );
-  const hasLearnings = files.some((f) => f.path === "learning-root/findings.json" || f.path === ".agent-loop/learning/findings.json");
-
-  const steps = [
-    { label: "BOARD", isCompleted: hasBoard, isActive: isInstalled && !hasBoard, num: "01" },
-    { label: "SESSION", isCompleted: hasSession, isActive: hasBoard && !hasSession, num: "02" },
-    { label: "RECALL", isCompleted: hasRecall, isActive: hasSession && !hasRecall, num: "03" },
-    { label: "VALIDATE", isCompleted: hasWorkDone, isActive: hasRecall && !hasWorkDone, num: "04" },
-    { label: "LEARN", isCompleted: hasLearnings, isActive: hasWorkDone && !hasLearnings, num: "05" }
+  // Steps definitions for progress bar
+  const stepDefinitions = [
+    { label: "INIT", isCompleted: isInstalled, isActive: activeStep === "init", num: "01" },
+    { label: "BOARD", isCompleted: hasBoard, isActive: activeStep === "board", num: "02" },
+    { label: "PLAN", isCompleted: hasBrief, isActive: activeStep === "plan", num: "03" },
+    { label: "APPROVE", isCompleted: briefStatus === "approved", isActive: activeStep === "approve", num: "04" },
+    { label: "RECALL", isCompleted: hasRecall, isActive: activeStep === "recall", num: "05" },
+    { label: "WORK", isCompleted: hasWorkDone, isActive: activeStep === "work", num: "06" },
+    { label: "VERIFY", isCompleted: hasVerify, isActive: activeStep === "verify", num: "07" },
+    { label: "CLOSE", isCompleted: hasClose, isActive: activeStep === "close", num: "08" },
+    { label: "LEARN", isCompleted: hasLearnings, isActive: activeStep === "learn", num: "09" },
+    { label: "MEMORY", isCompleted: hasMemory, isActive: activeStep === "memory", num: "10" },
   ];
+
+  if (viewMode === "landing") {
+    return <LandingPage onLaunchSandbox={() => setViewMode("sandbox")} />;
+  }
 
   return (
     <div className="min-h-screen bg-[#E4E3E0] text-[#141414] flex flex-col font-sans transition-colors duration-300">
+      
       {/* Header bar */}
-      <header className="border-b-2 border-[#141414] px-6 py-5 flex flex-col lg:flex-row lg:items-center justify-between gap-5 select-none shrink-0 bg-[#F0EFEC]">
+      <header className="border-b-2 border-[#141414] px-6 py-4 flex flex-col lg:flex-row lg:items-center justify-between gap-5 select-none shrink-0 bg-[#F0EFEC]">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-[#141414] text-[#E4E3E0] flex items-center justify-center font-bold font-mono text-sm tracking-tighter">
             AL_
           </div>
           <div>
             <h1 className="text-sm md:text-base font-black tracking-widest text-[#141414] flex items-center gap-2 uppercase">
-              <span>AGENT-LOOP DX WORKSPACE</span>
-              <a href="https://github.com/voku/agent-loop" target="_blank" rel="noreferrer" className="bg-[#141414] text-[#E4E3E0] text-[9px] px-2 py-0.5 font-mono tracking-widest hover:bg-[#333333] transition-colors">
+              <span>AGENT-LOOP GOVERNED SANDBOX</span>
+              <a href="https://github.com/voku/agent-loop" target="_blank" rel="noreferrer" className="bg-[#141414] text-[#E4E3E0] text-[9px] px-2 py-0.5 font-mono tracking-widest hover:bg-slate-800 transition-colors">
                 GITHUB
               </a>
             </h1>
             <p className="text-[10px] text-[#141414]/70 font-mono uppercase tracking-wider mt-0.5">
-              Robust client workflow boundaries over terminal archaeology
+              Unified CLI Areas & Explicit Revisional Work Briefs
             </p>
           </div>
         </div>
 
-        {/* Step Progress Grid Tracker */}
-        <div className="grid grid-cols-5 border-2 border-[#141414] bg-[#E4E3E0] max-w-full lg:max-w-xl w-full select-none divide-x-2 divide-[#141414] shrink-0 font-mono overflow-hidden">
-          {steps.map((step, idx) => {
+        {/* 10-step Progress Tracker Bar */}
+        <div className="grid grid-cols-5 md:grid-cols-10 border-2 border-[#141414] bg-[#E4E3E0] max-w-full lg:max-w-2xl w-full select-none divide-x divide-y md:divide-y-0 divide-[#141414] shrink-0 font-mono overflow-hidden">
+          {stepDefinitions.map((step, idx) => {
             let bgClass = "bg-[#DAD9D6] text-[#141414]/40";
             if (step.isCompleted) {
               bgClass = "bg-[#141414] text-[#E4E3E0]";
@@ -389,18 +796,15 @@ export default function App() {
             return (
               <div
                 key={idx}
-                className={`py-1.5 px-0.5 sm:px-2 flex flex-col items-center justify-center text-center transition-all duration-300 relative ${bgClass}`}
+                className={`py-2 px-1 flex flex-col items-center justify-center text-center transition-all duration-300 relative ${bgClass}`}
               >
                 {step.isActive && (
                   <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-red-600 rounded-full animate-ping" />
                 )}
-                <span className="text-[9px] font-bold block sm:hidden">
+                <span className="text-[9px] font-black tracking-wider">
                   {step.isCompleted ? "✔" : step.num}
                 </span>
-                <span className="text-[10px] font-black tracking-wider hidden sm:inline">
-                  {step.isCompleted ? "✔ DONE" : `${step.num} ${step.isActive ? "•" : ""}`}
-                </span>
-                <span className="text-[8px] sm:text-[9px] font-extrabold tracking-widest mt-0.5 uppercase block">
+                <span className="text-[8px] font-extrabold tracking-wider uppercase mt-0.5 block">
                   {step.label}
                 </span>
               </div>
@@ -408,118 +812,52 @@ export default function App() {
           })}
         </div>
 
-        <div className="flex items-center gap-4 text-[10px] font-mono lg:ml-0 font-bold uppercase tracking-wider">
+        <div className="flex items-center gap-4 text-[10px] font-mono font-bold uppercase tracking-wider shrink-0">
+          <button
+            onClick={() => setViewMode("landing")}
+            className="px-3 py-1.5 bg-white hover:bg-[#DAD9D6] text-[#141414] font-black border-2 border-[#141414] shadow-[2.5px_2.5px_0px_0px_rgba(20,20,20,1)] hover:translate-y-[-0.5px] transition-all cursor-pointer flex items-center gap-1.5"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-indigo-700" />
+            <span>View Project Docs</span>
+          </button>
           <div className="flex items-center gap-1.5 text-[#141414]">
             <Clock className="w-3.5 h-3.5 text-[#141414]" />
-            <span>UTC: {currentUtc || "LIVE"}</span>
+            <span>UTC Clock: {currentUtc || "LIVE"}</span>
           </div>
         </div>
       </header>
 
-      {/* Primary Dashboard layout split columns */}
-      <main className="flex-1 max-w-[1550px] w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0 min-w-0 overflow-y-auto lg:overflow-hidden">
+      {/* Primary Dashboard layout */}
+      <main className="flex-1 max-w-[1600px] w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0 min-w-0 overflow-y-auto lg:overflow-hidden">
         
-        {/* Left Column: Column-1 (The Live Dashboard) */}
-        <div className="lg:col-span-5 h-[650px] lg:h-full flex flex-col min-h-0 min-w-0 shrink-0">
-          <AgentMonitor files={files} />
+        {/* Left Column: Diagnostics State Dashboard */}
+        <div className="lg:col-span-5 h-[650px] lg:h-full flex flex-col min-h-0 min-w-0">
+          <AgentMonitor 
+            files={files} 
+            activeStep={activeStep}
+            onRunCommand={handleRunCommand}
+            onSelectFile={(path) => setActiveFilePath(path)}
+            activeFilePath={activeFilePath}
+            isLoading={isLoading}
+            onReset={handleResetSimulator}
+            humanReviewStage={humanReviewStage}
+            onApproveBrief={handleApproveBrief}
+            onReplanBrief={handleReplanAndSupersede}
+            onApproveCodePatch={handleApproveCodePatch}
+            onRejectCodePatch={handleRejectCodePatch}
+            onApproveRevisedPatch={handleApproveRevisedPatch}
+            onPersistFinding={handlePersistFinding}
+            onConfirmPromotions={handleConfirmPromotions}
+            isAutoRunning={isAutoRunning}
+            setIsAutoRunning={setIsAutoRunning}
+          />
         </div>
 
-        {/* Right Column: Column-2 (The Interactive IDE / Sandbox environment) */}
+        {/* Right Column: Interactive Sandbox & CLI editor */}
         <div className="lg:col-span-7 flex flex-col gap-4 min-h-0 min-w-0 h-full">
 
-          {/* Interactive Human-In-The-Loop Checkpoint Card */}
-          {humanReviewStage !== "hidden" && (
-            <div className="bg-[#F0EFEC] border-2 border-[#141414] p-5 shadow-none relative overflow-hidden animate-fade-in">
-              <div className="absolute top-0 bottom-0 left-0 w-2.5 bg-amber-500" />
-              
-              {humanReviewStage === "propose_patch" && (
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pl-3">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-[10px] font-bold tracking-widest text-[#141414] uppercase font-mono">
-                      <ShieldCheck className="w-4 h-4 text-orange-600" />
-                      <span>CHECKPOINT REQUIRED // PROPOSED CODE PATCH</span>
-                    </div>
-                    <h3 className="text-sm font-black text-[#141414] uppercase tracking-tight">
-                      ADD VALIDATION GUARDS ON App\Signup.php
-                    </h3>
-                    <p className="text-xs text-[#141414]/80 max-w-xl font-medium">
-                      Lars says: <span className="italic">"The agent proposes, it does not own."</span> Inspect the proposed validation rules in the workspace directory file explorer below before approval checkin.
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0 font-mono">
-                    <button
-                      onClick={handleRejectCodePatch}
-                      className="px-3 py-1.5 text-xs text-[#141414] hover:bg-[#141414] hover:text-[#E4E3E0] border border-[#141414] font-bold uppercase tracking-wider transition cursor-pointer"
-                    >
-                      Reject
-                    </button>
-                    <button
-                      onClick={handleApproveCodePatch}
-                      className="px-3 py-1.5 text-xs text-[#E4E3E0] bg-[#141414] hover:bg-[#333333] border border-[#141414] font-bold uppercase tracking-wider transition cursor-pointer"
-                    >
-                      Approve & Write
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {humanReviewStage === "propose_learn" && (
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pl-3">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-[10px] font-bold tracking-widest text-emerald-700 uppercase font-mono">
-                      <Sparkles className="w-4 h-4 text-emerald-700" />
-                      <span>ELEVATE RULE // MEMORY STORAGE UPGRADE</span>
-                    </div>
-                    <h3 className="text-sm font-black text-[#141414] uppercase tracking-tight">
-                      PERSIST LEARNINGS IN FINDINGS.JSON?
-                    </h3>
-                    <p className="text-xs text-[#141414]/80 max-w-xl font-medium">
-                      Elevate strict method typing boundaries to durable repository memory. Future coding sessions will immediately inherit this knowledge constraint!
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0 font-mono">
-                    <button
-                      onClick={() => {
-                        setHumanReviewStage("completed");
-                        setTerminalHistory((prev) => [
-                          ...prev,
-                          { type: "warning", text: "👉 Human chose to skip durable rule addition. Session closed cleanly." }
-                        ]);
-                      }}
-                      className="px-3 py-1.5 text-xs text-[#141414] hover:bg-[#141414] hover:text-[#E4E3E0] border border-[#141414] font-bold uppercase tracking-wider transition cursor-pointer"
-                    >
-                      Skip
-                    </button>
-                    <button
-                      onClick={handleApproveDurableLearning}
-                      className="px-3 py-1.5 text-xs text-[#141414] bg-amber-400 hover:bg-amber-300 border border-[#141414] font-bold uppercase tracking-wider transition cursor-pointer animate-pulse"
-                    >
-                      Persist finding
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {humanReviewStage === "completed" && (
-                <div className="flex items-center gap-3 pl-3">
-                  <div className="p-2 bg-[#141414] text-[#E4E3E0] rounded-none border border-[#141414]">
-                    <Award className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-black text-[#141414] uppercase tracking-tight">
-                      SESSION LOG COMPLETED & SECURELY ARCHIVED
-                    </h3>
-                    <p className="text-xs text-[#141414]/80 font-medium">
-                      You have successfully installed the package, established memory boundaries, run validations, and logged findings. Grounded agent automation complete.
-                    </p>
-                  </div>
-                 </div>
-              )}
-            </div>
-          )}
-
-          {/* Top Panel: Interactive Workspace Directory & IDE Code View */}
-          <div className="flex-[1.5] min-h-[450px] lg:min-h-0 lg:h-1/2">
+          {/* Interactive Workspace Directory & IDE Code View */}
+          <div className="flex-[1.5] min-h-[420px] lg:min-h-0 lg:h-1/2">
             <FileSystem
               files={files}
               activeFilePath={activeFilePath}
@@ -528,8 +866,8 @@ export default function App() {
             />
           </div>
 
-          {/* Bottom Panel: Visual Terminal Console Simulator */}
-          <div className="flex-1 min-h-[380px] shrink-0">
+          {/* Visual Terminal Console Simulator */}
+          <div className="flex-1 min-h-[350px] shrink-0">
             <Terminal
               history={terminalHistory}
               onReset={handleResetSimulator}

@@ -44,12 +44,15 @@ export default function Terminal({
   };
 
   const presetCommands = [
-    { cmd: "vendor/bin/agent-loop board:sync" },
-    { cmd: "vendor/bin/agent-loop session:start --task=DEMO-1 --by=lars" },
-    { cmd: "vendor/bin/agent-loop recall:compile --root=learning-root --task=DEMO-1" },
+    { cmd: "vendor/bin/agent-loop board card show DEMO-1" },
+    { cmd: "vendor/bin/agent-loop workflow plan DEMO-1" },
+    { cmd: "vendor/bin/agent-loop workflow approve DEMO-1" },
+    { cmd: "vendor/bin/agent-loop recall:compile --root=.agent-loop/recall" },
     { cmd: "composer test" },
     { cmd: "vendor/bin/agent-loop verify --strict" },
-    { cmd: "vendor/bin/agent-loop learn:persist --root=learning-root" }
+    { cmd: "vendor/bin/agent-loop workflow report" },
+    { cmd: "vendor/bin/agent-loop learn:validate --root=learning-root" },
+    { cmd: "vendor/bin/agent-loop learn:guidance-evaluate" }
   ];
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -127,31 +130,6 @@ export default function Terminal({
         </div>
       </div>
 
-      {/* CLI Quick Action Strip */}
-      <div className="bg-[#1c1c1c] p-3 border-t border-[#333333]">
-        <div className="text-[9px] text-[#E4E3E0]/50 uppercase font-bold tracking-widest font-mono mb-2">
-          Command Shortcuts
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          <button
-            onClick={() => onRunCustomCommand("composer require voku/agent-loop")}
-            disabled={isLoading}
-            className="px-2 py-1 bg-[#141414] hover:bg-[#E4E3E0] hover:text-[#141414] border border-[#333333] text-[#E4E3E0] text-[10px] font-mono cursor-pointer transition disabled:opacity-50"
-          >
-            composer require voku/agent-loop
-          </button>
-          {presetCommands.map((item, idx) => (
-            <button
-              key={idx}
-              onClick={() => onRunCustomCommand(item.cmd)}
-              disabled={isLoading}
-              className="px-2 py-1 bg-[#141414] hover:bg-[#E4E3E0] hover:text-[#141414] border border-[#333333] text-[#E4E3E0] text-[10px] font-mono cursor-pointer transition disabled:opacity-50"
-            >
-              {item.cmd}
-            </button>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

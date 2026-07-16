@@ -8,7 +8,7 @@ export interface VirtualFile {
   path: string;
   content: string;
   language: "markdown" | "json" | "php";
-  category: "board" | "session" | "recall" | "learning" | "config" | "source";
+  category: "board" | "workflow" | "session" | "recall" | "map" | "learning" | "config" | "source";
 }
 
 export interface TerminalLine {
@@ -17,7 +17,17 @@ export interface TerminalLine {
   timestamp?: string;
 }
 
-export type StepId = "install" | "board" | "session" | "recall" | "work" | "validate" | "learning";
+export type StepId = 
+  | "init"
+  | "board"
+  | "plan"
+  | "approve"
+  | "recall"
+  | "work"
+  | "verify"
+  | "close"
+  | "learn"
+  | "memory";
 
 export interface DemoStep {
   id: StepId;
