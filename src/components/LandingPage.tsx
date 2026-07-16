@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import {
-  BookOpen,
   Terminal as TermIcon,
   GitPullRequest,
   ArrowRight,
@@ -14,13 +13,10 @@ import {
   FileCheck,
   FileText,
   Map,
-  Sparkles,
-  Trash2,
   Copy,
   Check,
   Activity,
   Maximize2,
-  ChevronRight,
   HelpCircle
 } from "lucide-react";
 
@@ -89,6 +85,26 @@ export default function LandingPage({ onLaunchSandbox }: LandingPageProps) {
       output: "infra/doc/agent-learning/proposals/candidate/proposal.*.json"
     }
   };
+
+  const workflowSteps = [
+    { label: "Task", text: "A concrete backlog card starts the loop." },
+    { label: "Approved Plan", text: "A human signs a scoped work brief." },
+    { label: "Selective Recall", text: "Only relevant rules are compiled for the agent." },
+    { label: "Implementation", text: "Your coding agent edits inside the contract." },
+    { label: "Verification", text: "Checks compare changes against approved scope." },
+    { label: "Evidence", text: "Logs and summaries become reviewable artifacts." },
+    { label: "Human Review", text: "A developer decides what is accepted." },
+    { label: "Durable Learning", text: "Useful findings can graduate into rules." }
+  ];
+
+  const dogfoodSteps = [
+    "Found issue",
+    "Recorded evidence",
+    "Verification",
+    "Learning proposal",
+    "Human review",
+    "Release"
+  ];
 
   const faqItems = [
     {
@@ -163,9 +179,12 @@ export default function LandingPage({ onLaunchSandbox }: LandingPageProps) {
             Better workflows beat bigger context windows.
           </h1>
           <p className="text-sm md:text-base text-slate-700 leading-relaxed max-w-2xl mx-auto font-sans">
-            AI coding agents don’t primarily fail due to small memory buffers. They fail because workflows don’t distinguish temporary changes from durable project rules. 
-            <strong className="text-[#141414]"> agent-loop</strong> introduces a versioned, multi-actor local contract that eliminates context landfill and repeats of structural mistakes.
+            Your coding agent doesn’t need more memory. It needs a governed workflow.
+            <strong className="text-[#141414]"> agent-loop</strong> treats AI-assisted coding as an engineering process: plan, approve, recall, implement, verify, review, and only then promote durable learning.
           </p>
+          <div className="inline-block bg-[#141414] text-[#F0EFEC] border-2 border-[#141414] px-4 py-2 font-mono text-[11px] font-black uppercase shadow-[4px_4px_0px_0px_rgba(251,191,36,1)]">
+            Git versions code. Agent Loop versions engineering decisions.
+          </div>
 
           {/* Quick Copy Command Component */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
@@ -210,6 +229,36 @@ export default function LandingPage({ onLaunchSandbox }: LandingPageProps) {
           <div className="py-4 px-2">
             <div className="text-xl font-black text-amber-600">ZERO GLUE</div>
             <div className="text-[9px] text-slate-500 tracking-wider mt-0.5">Independent of APIs</div>
+          </div>
+        </div>
+
+        {/* WHY THIS EXISTS */}
+        <div className="grid grid-cols-1 md:grid-cols-[1.05fr_0.95fr] gap-6 items-stretch">
+          <div className="border-2 border-[#141414] bg-white p-6 space-y-4 shadow-[5px_5px_0px_0px_rgba(20,20,20,1)]">
+            <div className="space-y-1">
+              <h2 className="font-mono text-[10px] font-black uppercase tracking-widest text-[#141414]/65">WHY THIS EXISTS</h2>
+              <h3 className="text-xl font-black uppercase tracking-tight font-mono">Prompt engineering scales poorly. Workflow engineering doesn’t.</h3>
+            </div>
+            <p className="text-sm text-slate-700 leading-relaxed">
+              Existing coding-agent setups slowly decay because every failed session leaves behind another note, another rule file, and another half-remembered workaround. The context window becomes a junk drawer instead of an engineering contract.
+            </p>
+            <p className="text-sm text-slate-700 leading-relaxed">
+              Agent Loop exists to make the work around the agent explicit: who approved the plan, which files were in scope, what evidence proves the result, and which lessons deserve to become durable rules.
+            </p>
+          </div>
+
+          <div className="border-2 border-red-900 bg-red-50 p-5 space-y-3 shadow-[5px_5px_0px_0px_rgba(127,29,29,0.18)]">
+            <div className="font-mono text-[10px] font-black uppercase tracking-widest text-red-800">The familiar graveyard</div>
+            <div className="bg-white border border-red-200 p-4 font-mono text-[12px] leading-7 text-red-950 shadow-inner">
+              <div>MEMORY.md</div>
+              <div>project-rules.md</div>
+              <div>agent-notes.md</div>
+              <div>lessons-learned.md</div>
+              <div>MEMORY_FINAL.md</div>
+            </div>
+            <p className="text-xs text-red-950/80 leading-relaxed">
+              Everybody recognizes the joke because it is true: ungoverned memory files keep growing, but accountability does not.
+            </p>
           </div>
         </div>
 
@@ -290,6 +339,33 @@ export default function LandingPage({ onLaunchSandbox }: LandingPageProps) {
               </div>
             </div>
 
+          </div>
+        </div>
+
+        {/* WORKFLOW FIRST VISUAL */}
+        <div className="space-y-6">
+          <div className="space-y-1 text-center">
+            <h2 className="font-mono text-[10px] font-black uppercase tracking-widest text-[#141414]/65">WHAT HAPPENS WHEN YOU USE IT</h2>
+            <h3 className="text-xl font-black uppercase tracking-tight font-mono">A governed workflow before a component list</h3>
+          </div>
+
+          <div className="border-2 border-[#141414] bg-white p-5 shadow-[6px_6px_0px_0px_rgba(20,20,20,1)]">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              {workflowSteps.map((step, idx) => (
+                <div key={step.label} className="relative border-2 border-[#141414] bg-[#F9F8F6] p-4 min-h-32 flex flex-col justify-between">
+                  <div className="absolute -top-3 -left-2 bg-amber-400 border-2 border-[#141414] px-2 py-0.5 font-mono text-[9px] font-black">
+                    {String(idx + 1).padStart(2, "0")}
+                  </div>
+                  <div>
+                    <h4 className="font-mono text-sm font-black uppercase text-[#141414] mt-2">{step.label}</h4>
+                    <p className="text-[11px] text-slate-600 leading-normal mt-2">{step.text}</p>
+                  </div>
+                  {idx < workflowSteps.length - 1 && (
+                    <ArrowRight className="hidden md:block absolute -right-4 top-1/2 -translate-y-1/2 w-5 h-5 bg-white border border-[#141414] rounded-full p-0.5 text-[#141414] z-10" />
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -452,17 +528,49 @@ export default function LandingPage({ onLaunchSandbox }: LandingPageProps) {
           </div>
         </div>
 
+        {/* DOGFOODING TIMELINE */}
+        <div className="space-y-6">
+          <div className="space-y-1 text-center">
+            <h2 className="font-mono text-[10px] font-black uppercase tracking-widest text-[#141414]/65">DOGFOODED GOVERNANCE</h2>
+            <h3 className="text-xl font-black uppercase tracking-tight font-mono">We used Agent Loop to improve Agent Loop itself</h3>
+          </div>
+          <div className="border-2 border-[#141414] bg-[#F0EFEC] p-5 shadow-[6px_6px_0px_0px_rgba(20,20,20,1)]">
+            <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
+              {dogfoodSteps.map((step, idx) => (
+                <div key={step} className="bg-white border-2 border-[#141414] p-3 text-center relative min-h-24 flex items-center justify-center">
+                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-[#141414] text-amber-300 font-mono text-[8px] font-black px-2 py-0.5">
+                    {idx + 1}
+                  </div>
+                  <span className="font-mono text-[10px] font-black uppercase leading-tight">{step}</span>
+                  {idx < dogfoodSteps.length - 1 && (
+                    <ArrowRight className="hidden md:block absolute -right-4 top-1/2 -translate-y-1/2 w-5 h-5 bg-amber-400 border border-[#141414] rounded-full p-0.5 text-[#141414] z-10" />
+                  )}
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-slate-700 leading-relaxed mt-4 text-center max-w-2xl mx-auto">
+              The credibility claim is not “trust our framework.” It is: every workflow improvement can travel through the same evidence, review, and release path that the tool asks your code changes to follow.
+            </p>
+          </div>
+        </div>
+
         {/* IMPLEMENTATION REASONING (PHP 8.3 ADVANTAGE) */}
         <div className="space-y-6">
           <div className="space-y-1 text-center">
             <h2 className="font-mono text-[10px] font-black uppercase tracking-widest text-[#141414]/65">INTERPRETED SYSTEM ADVANTAGE</h2>
-            <h3 className="text-xl font-black uppercase tracking-tight font-mono">PHP 8.3: Empowering Self-Correcting Workflows</h3>
+            <h3 className="text-xl font-black uppercase tracking-tight font-mono">Built in PHP for a reason</h3>
           </div>
 
           <div className="border-2 border-[#141414] bg-white p-6 space-y-4 shadow-[4px_4px_0px_0px_rgba(20,20,20,1)] font-sans text-xs text-slate-700 leading-relaxed">
             <p>
-              Choosing PHP 8.3 as the implementation language is a deliberate, practical engineering choice. Because the workflow orchestration commands are written in an interpreted, highly transparent language, <strong>there is no compiled build bottleneck</strong> between the tooling and the codebase itself.
+              Choosing PHP 8.3 is a deliberate, practical engineering choice: the workflow is easy to inspect, easy to modify, and fast to run inside ordinary repositories.
             </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 font-mono text-[11px] font-black uppercase text-[#141414]">
+              <div className="border border-[#141414]/20 bg-[#F9F8F6] p-2">• Easy to inspect</div>
+              <div className="border border-[#141414]/20 bg-[#F9F8F6] p-2">• Easy to modify</div>
+              <div className="border border-[#141414]/20 bg-[#F9F8F6] p-2">• Immediate feedback</div>
+              <div className="border border-[#141414]/20 bg-[#F9F8F6] p-2">• Agents can improve the workflow itself</div>
+            </div>
             
             <p className="font-medium text-[#141414]">
               How this works in practice:
