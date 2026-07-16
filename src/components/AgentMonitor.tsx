@@ -952,7 +952,7 @@ export default function AgentMonitor({
                 The agent repeats a mistake.
               </blockquote>
               <p>
-                So we add memory. More instructions, more summaries, more transcripts, more project knowledge, and more Markdown files with names such as <code>MEMORY_FINAL_v2.md</code>.
+                So we add memory. More instructions, more summaries, more transcripts, more project knowledge, and more Markdown files with names such as <code>MEMORY_FINAL_OLD.md</code>.
               </p>
               <p>
                 And somehow the agent still forgets the one project rule that mattered, while confidently remembering a temporary workaround from three weeks ago.

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="agent-loop favicon">
+  <rect width="64" height="64" rx="12" fill="#141414"/>
+  <path d="M18 39V24h6v10h16v-6l9 9-9 9v-7H18Z" fill="#FBBF24"/>
+  <path d="M46 25V15H30v6l-9-9 9-9v7h22v15h-6Z" fill="#E4E3E0"/>
+</svg>

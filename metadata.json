@@ -2,5 +2,5 @@
   "name": "agent-loop Workflow",
   "description": "An interactive workbook showing how to install and use agent-loop, the PHP package for structured developer agent sessions.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": []
 }

@@ -97,7 +97,7 @@ export default function LandingPage({ onLaunchSandbox }: LandingPageProps) {
     },
     {
       q: "Is agent-loop a competitor to Claude Code, Aider, or Cursor?",
-      a: "No. It is a complementary workflow layer. You use existing high-performance agents (Aider, Claude Code, Cursor, Gemini CLI) to write the actual code. agent-loop wraps their execution in an explicit engineering contract: planning, scope locking, selective recall compiled prior to execution, and rigorous verification gates."
+      a: "No. It is a complementary workflow layer. You use existing high-performance agents (Aider, Claude Code, Cursor, OpenCode) to write the actual code. agent-loop wraps their execution in an explicit engineering contract: planning, scope locking, selective recall compiled prior to execution, and rigorous verification gates."
     },
     {
       q: "What is 'context landfill' and how does agent-loop solve it?",
@@ -127,10 +127,10 @@ export default function LandingPage({ onLaunchSandbox }: LandingPageProps) {
               <div className="flex items-center gap-2">
                 <span className="font-black text-sm md:text-base uppercase tracking-widest">agent-loop</span>
                 <span className="bg-[#141414] text-[#E4E3E0] text-[9px] font-mono font-bold px-1.5 py-0.2 uppercase border border-[#141414]">
-                  PHP 8.3 CLI
+                  PHP 8.3+ CLI
                 </span>
                 <span className="bg-emerald-100 text-emerald-800 text-[9px] font-mono font-black px-1.5 py-0.2 border border-emerald-400">
-                  v1.4.0
+                  Current
                 </span>
               </div>
               <p className="text-[10px] text-[#141414]/75 font-mono uppercase tracking-widest mt-0.5">
@@ -633,7 +633,7 @@ export default function LandingPage({ onLaunchSandbox }: LandingPageProps) {
         {/* THE FINAL CALL TO ACTION (CTA) */}
         <div className="border-2 border-[#141414] bg-[#F0EFEC] p-8 text-center space-y-6 shadow-[8px_8px_0px_0px_rgba(20,20,20,1)] relative select-none">
           <div className="absolute top-4 right-4 bg-white border border-[#141414]/15 px-2 py-0.5 font-mono text-[8px] font-black text-slate-500 uppercase tracking-wider">
-            GOVERNANCE PROTOCOL v1.4
+            GOVERNANCE PROTOCOL
           </div>
 
           <div className="space-y-2 max-w-2xl mx-auto">
