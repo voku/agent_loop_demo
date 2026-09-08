@@ -1,6 +1,6 @@
 {
-  "name": "agent-loop Workflow",
-  "description": "An interactive workbook showing how to install and use agent-loop, the PHP package for structured developer agent sessions.",
+  "name": "agent-loop — Governed Local Workflows for Coding Agents",
+  "description": "A local-first PHP workflow kernel for governed coding-agent work: durable task authority, bounded context, owner-backed evidence, and canonical next-action routing.",
   "requestFramePermissions": [],
-  "majorCapabilities": []
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

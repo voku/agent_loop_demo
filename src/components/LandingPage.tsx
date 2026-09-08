@@ -1,34 +1,39 @@
 import React, { useState } from "react";
 import {
   Activity,
+  AlertTriangle,
   ArrowRight,
   Brain,
   Check,
+  CheckCircle,
   Copy,
   FileCheck,
+  FileCode,
+  FileWarning,
   GitBranch,
   GitPullRequest,
   Layers,
   Map,
   PackageCheck,
+  Scale,
   Search,
+  ShieldAlert,
   ShieldCheck,
   Terminal as TermIcon,
   User,
-  Wrench
+  Wrench,
+  XCircle
 } from "lucide-react";
+import {
+  CliCommand,
+  EvidenceComparison,
+  FaqItem,
+  HumanDecisionBoundary,
+  PackageSpec
+} from "../types";
 
 interface LandingPageProps {
   onLaunchSandbox: () => void;
-}
-
-interface CliCommand {
-  readonly cmd: string;
-  readonly description: string;
-  readonly does: string;
-  readonly doesNot: string;
-  readonly input: string;
-  readonly output: string;
 }
 
 const cliCommands: Readonly<Record<string, CliCommand>> = {
@@ -91,19 +96,166 @@ const nextActionKinds = [
   ["none", "No further lifecycle action is required."]
 ] as const;
 
-const packages = [
-  ["CORE", "voku/agent-loop", "Kernel & Governance", "Contract/Run lifecycle, cross-owner policy, approvals, routing, quality gates, and host-facing projections."],
-  ["BOARD", "voku/agent-kanban", "Board & Tasks", "Git-native Markdown work items, deterministic parsing, revision identity, and safe board mutation."],
-  ["STATE", "voku/agent-session", "Working Memory", "Task-local mutable session state, validation evidence, checkpoints, and pruneable retention."],
-  ["INTEL", "voku/agent-map", "Code Intelligence", "Structural and semantic PHP repository maps, search, callers, callees, impact, and edit context."],
-  ["RECALL", "voku/agent-recall-compiler", "Context & Prompts", "Governed briefing, provenance, task-scoped Recall, review semantics, and L2 operating-prompt recipes."],
-  ["LEARN", "voku/agent-learning", "Durable Learning", "Reviewable findings, LearningNotes, proposals, evidence, lineage, and durable Learning decisions."],
-  ["RUN", "voku/agent-loop-runner", "Execution Plane", "Optional external process supervisor with isolated Git worktrees and coding-host adapters."],
-  ["UI", "voku/agent-ui", "Control Plane", "Local server-rendered human cockpit for board, task workbench, evidence, and code-intelligence views."],
-  ["SKILLS", "voku/agent-skills", "Guidance Catalog", "Portable engineering skills, review lenses, and reusable static-analysis guidance."]
+const evidenceComparisons: readonly EvidenceComparison[] = [
+  {
+    domain: "Test Suite Verification",
+    claim: 'Agent says: "I ran composer test and all 18 test suites passed with 0 errors."',
+    claimFlaw: "Hallucinated stdout, cached stale results, or skipped execution entirely. In natural language chat, this claim cannot be distinguished from reality.",
+    evidenceArtifact: "agent-session/runs/DEMO-1/evidence/test_execution.json",
+    evidenceCheck: "Recorded process invocation `composer test`, exit code 0, execution duration, and hash of working-tree implementation at time of run.",
+    ownerPackage: "voku/agent-session & voku/agent-loop"
+  },
+  {
+    domain: "Scope & Mutation Boundary",
+    claim: 'Agent says: "I only changed src/Signup.php as authorized."',
+    claimFlaw: "Silent edits in database migrations, bootstrap configs, or global helpers go unnoticed until staging crashes.",
+    evidenceArtifact: "Contract revision diff boundary + Git working-tree status",
+    evidenceCheck: "Kernel checks actual modified files against approved Contract scope [src/Signup.php]. Any foreign path mutation triggers an automatic out-of-scope halt.",
+    ownerPackage: "voku/agent-loop"
+  },
+  {
+    domain: "Context & Guidance Hygiene",
+    claim: 'Agent says: "I kept all historical project rules in my context memory."',
+    claimFlaw: "Landfill context: temporary workarounds from 3 weeks ago conflict with modern rules; prompt tokens drown in obsolete chatter.",
+    evidenceArtifact: "agent-recall-compiler briefing with provenance hash",
+    evidenceCheck: "Deterministic token-budgeted prompt compiled strictly from active, human-approved Learning rules and symbol intelligence, excluding dead session notes.",
+    ownerPackage: "voku/agent-recall-compiler"
+  },
+  {
+    domain: "Durable Learning Promotion",
+    claim: 'Agent says: "I noted this edge-case in MEMORY.md for all future sessions."',
+    claimFlaw: "Unchecked markdown edits create contradictory instructions, hallucinated architecture guidelines, and prompt drift across developers.",
+    evidenceArtifact: "infra/doc/agent-learning/proposals/candidate/*.json",
+    evidenceCheck: "Structured finding note with reproducible test evidence, reviewed and promoted into a project guideline only through explicit human approval.",
+    ownerPackage: "voku/agent-learning"
+  }
+];
+
+const decisionBoundaries: readonly HumanDecisionBoundary[] = [
+  {
+    role: "Human-Owned",
+    decision: "Contract Goal & Scope Approval",
+    justification: "Only humans define what problem is being solved and which files the agent has permission to touch.",
+    mechanism: "vendor/bin/agent-loop workflow approve <task> --by <user>"
+  },
+  {
+    role: "Human-Owned",
+    decision: "Scope Escalation & Intent Shift",
+    justification: "If implementation reveals an unforeseen dependency outside the approved boundary, mutation halts until a human accepts the new revision.",
+    mechanism: "Candidate Contract revision re-planning + explicit human sign-off"
+  },
+  {
+    role: "Human-Owned",
+    decision: "Policy Waivers & Accepted Risk",
+    justification: "Neither the coding agent nor the orchestrator may waive static analysis failures or bypass security gates on its own.",
+    mechanism: "next_action_kind: decision_required with authority-bearing subject"
+  },
+  {
+    role: "Human-Owned",
+    decision: "Durable Guidance Promotion",
+    justification: "Session observations must never become permanent repository policy without peer-reviewable human confirmation.",
+    mechanism: "vendor/bin/agent-loop learn proposal-approve <proposal-id>"
+  },
+  {
+    role: "Kernel-Enforced",
+    decision: "Lifecycle State & Next Action Routing",
+    justification: "Eliminates prompt drift and host confusion by calculating canonical next actions deterministically.",
+    mechanism: "enter / finish CLI contract returning next_action_kind"
+  },
+  {
+    role: "Host-Native",
+    decision: "Implementation & Syntax Selection",
+    justification: "The model / host remains free to use normal editor tools, language servers, and algorithms inside the approved boundary.",
+    mechanism: "Direct workspace file edits bounded by Contract scope"
+  }
+];
+
+const packages: readonly PackageSpec[] = [
+  {
+    badge: "CORE",
+    name: "voku/agent-loop",
+    role: "Kernel & Governance",
+    responsibility: "Contract/Run lifecycle, cross-owner policy, approvals, routing, quality gates, and host-facing projections.",
+    boundary: "Does not parse board markdown or manage working tree git directly."
+  },
+  {
+    badge: "BOARD",
+    name: "voku/agent-kanban",
+    role: "Board & Tasks",
+    responsibility: "Git-native Markdown work items, deterministic parsing, revision identity, and safe board mutation.",
+    boundary: "Owns task cards and columns; does not govern run lifecycles."
+  },
+  {
+    badge: "STATE",
+    name: "voku/agent-session",
+    role: "Working Memory",
+    responsibility: "Task-local mutable session state, validation evidence, checkpoints, and pruneable retention.",
+    boundary: "Scratchpad and evidence storage; intentionally discarded after task close."
+  },
+  {
+    badge: "INTEL",
+    name: "voku/agent-map",
+    role: "Code Intelligence",
+    responsibility: "Structural and semantic PHP repository maps, search, callers, callees, impact, and edit context.",
+    boundary: "Read-only code graph generation; does not execute code or edit files."
+  },
+  {
+    badge: "RECALL",
+    name: "voku/agent-recall-compiler",
+    role: "Context & Prompts",
+    responsibility: "Governed briefing, provenance, task-scoped Recall, review semantics, and L2 operating-prompt recipes.",
+    boundary: "Compiles bounded prompt budgets; does not generate model completions."
+  },
+  {
+    badge: "LEARN",
+    name: "voku/agent-learning",
+    role: "Durable Learning",
+    responsibility: "Reviewable findings, LearningNotes, proposals, evidence, lineage, and durable Learning decisions.",
+    boundary: "Maintains durable organizational memory; distinct from task-local sessions."
+  },
+  {
+    badge: "RUN",
+    name: "voku/agent-loop-runner",
+    role: "Execution Plane",
+    responsibility: "Optional external process supervisor with isolated Git worktrees and coding-host adapters.",
+    boundary: "Execution supervisor; downstream consumer of the core CLI."
+  },
+  {
+    badge: "UI",
+    name: "voku/agent-ui",
+    role: "Control Plane",
+    responsibility: "Local server-rendered human cockpit for board, task workbench, evidence, and code-intelligence views.",
+    boundary: "Human inspection dashboard; read-only projections of owner state."
+  },
+  {
+    badge: "SKILLS",
+    name: "voku/agent-skills",
+    role: "Guidance Catalog",
+    responsibility: "Portable engineering skills, review lenses, and reusable static-analysis guidance.",
+    boundary: "Static procedural guidance; portable across six distinct coding hosts."
+  }
+];
+
+const whenNotToUse = [
+  {
+    title: "Ephemeral single-file scripts or quick scratchpads",
+    desc: "If you are hacking a 5-line throwaway bash script or testing an API curl command in a sandbox, a versioned Contract and verification gate is unnecessary ceremony."
+  },
+  {
+    title: "Open-ended conversational ideation",
+    desc: "If you are brainstorming architecture options, debating system trade-offs, or exploring syntax before any repository code is ready to change, stick to standard conversational chat."
+  },
+  {
+    title: "Unsupervised autonomous 'vibe-coding'",
+    desc: "If your workflow depends on giving an agent root shell access and letting it loop unchecked without human checkpoints or branch boundaries, Agent Loop's gated governance will deliberately stop it."
+  },
+  {
+    title: "Environments unwilling to execute a PHP 8.3 CLI",
+    desc: "While agent-skills and host configs are portable, the governance kernel is built natively in PHP for Composer-based engineering. Non-PHP projects requiring zero PHP runtime should not install the core CLI."
+  }
 ] as const;
 
-const faqItems = [
+const faqItems: readonly FaqItem[] = [
   {
     q: "Is agent-loop another coding agent?",
     a: "No. The coding host still performs implementation. agent-loop is the local workflow kernel around that host: durable task authority, bounded context, evidence, review, Learning, and canonical next-action routing. It is intentionally provider-independent."
@@ -113,8 +265,12 @@ const faqItems = [
     a: "Because the host should not duplicate the internal gate machine. enter and finish expose executable owner-backed policy through next_action_kind and next_action. Lower-level map, session, recall, review, learn, edit, and verify commands remain available for diagnostics, specialist work, CI, and recovery."
   },
   {
+    q: "How does Agent Loop distinguish claims from evidence?",
+    a: "An agent writing 'I ran all tests' is an unverified claim. Agent Loop records the command execution, exit code, stdout hash, and implementation git tree SHA inside the session package. It gates completion on recorded proof, not natural language chat."
+  },
+  {
     q: "Does approval lock every discovered file forever?",
-    a: "Approval seals the exact Contract revision and its mutation boundary. Discovery inside that approved boundary is ordinary implementation work. A real change to scope, product intent, policy, acceptance, accepted risk, or another authority-bearing decision can require a new human decision."
+    a: "Approval seals the exact Contract revision and its mutation boundary. Discovery inside that approved boundary is ordinary implementation work. A real change to scope, product intent, policy, acceptance, accepted risk, or another authority-bearing decision requires a new human decision."
   },
   {
     q: "Does agent-loop run PHPUnit or PHPStan itself?",
@@ -124,11 +280,12 @@ const faqItems = [
     q: "Why PHP 8.3+?",
     a: "The orchestration layer stays inspectable, local, Composer-native, and easy to dogfood inside ordinary PHP repositories. The tool can be modified, tested, and reviewed with the same language and engineering controls as the projects it governs."
   }
-] as const;
+];
 
 export default function LandingPage({ onLaunchSandbox }: LandingPageProps) {
   const [copiedText, setCopiedText] = useState(false);
   const [selectedCliTab, setSelectedCliTab] = useState<keyof typeof cliCommands>("enter");
+  const [selectedEvidenceIdx, setSelectedEvidenceIdx] = useState<number>(0);
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 
   const copyToClipboard = () => {
@@ -138,6 +295,7 @@ export default function LandingPage({ onLaunchSandbox }: LandingPageProps) {
   };
 
   const selectedCommand = cliCommands[selectedCliTab];
+  const activeEvidence = evidenceComparisons[selectedEvidenceIdx];
 
   return (
     <div className="bg-[#E4E3E0] text-[#141414] min-h-screen font-sans antialiased selection:bg-[#141414] selection:text-white pb-16">
@@ -164,6 +322,7 @@ export default function LandingPage({ onLaunchSandbox }: LandingPageProps) {
       </header>
 
       <main className="max-w-5xl mx-auto px-6 pt-12 md:pt-16 space-y-16">
+        {/* HERO SECTION */}
         <section className="space-y-6 text-center max-w-3xl mx-auto">
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-white border border-[#141414]/15 font-mono text-[10px] font-bold text-slate-600 uppercase tracking-wider rounded-full">
             <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse" />
@@ -193,6 +352,7 @@ export default function LandingPage({ onLaunchSandbox }: LandingPageProps) {
           </div>
         </section>
 
+        {/* METRICS / CREDIBILITY BAR */}
         <section className="grid grid-cols-2 md:grid-cols-4 border-2 border-[#141414] bg-[#F0EFEC] divide-x divide-y md:divide-y-0 divide-[#141414] text-center font-mono font-bold uppercase shadow-[6px_6px_0px_0px_rgba(20,20,20,1)] select-none">
           <div className="py-4 px-2"><div className="text-xl font-black">PHP 8.3+</div><div className="text-[9px] text-slate-500 tracking-wider mt-0.5">Runtime floor</div></div>
           <div className="py-4 px-2"><div className="text-xl font-black text-indigo-700">LOCAL-FIRST</div><div className="text-[9px] text-slate-500 tracking-wider mt-0.5">Files + Git evidence</div></div>
@@ -200,10 +360,11 @@ export default function LandingPage({ onLaunchSandbox }: LandingPageProps) {
           <div className="py-4 px-2"><div className="text-xl font-black text-amber-700">6 HOSTS</div><div className="text-[9px] text-slate-500 tracking-wider mt-0.5">Portable agent assets</div></div>
         </section>
 
+        {/* SECTION 1: WHY THIS EXISTS / GRAVEYARD */}
         <section className="grid grid-cols-1 md:grid-cols-[1.05fr_0.95fr] gap-6 items-stretch">
           <div className="border-2 border-[#141414] bg-white p-6 space-y-4 shadow-[5px_5px_0px_0px_rgba(20,20,20,1)]">
             <div>
-              <h2 className="font-mono text-[10px] font-black uppercase tracking-widest text-[#141414]/65">WHY THIS EXISTS</h2>
+              <h2 className="font-mono text-[10px] font-black uppercase tracking-widest text-[#141414]/65">QUESTION 1 // THE REAL PROBLEM</h2>
               <h3 className="text-xl font-black uppercase tracking-tight font-mono mt-1">Prompt piles decay. Owner-backed workflow state can be checked.</h3>
             </div>
             <p className="text-sm text-slate-700 leading-relaxed">
@@ -224,19 +385,20 @@ export default function LandingPage({ onLaunchSandbox }: LandingPageProps) {
           </div>
         </section>
 
+        {/* SECTION 2: THE CURRENT HOST CONTRACT */}
         <section className="space-y-6">
           <div>
-            <h2 className="font-mono text-[10px] font-black uppercase tracking-widest text-[#141414]/65">THE CURRENT HOST CONTRACT</h2>
+            <h2 className="font-mono text-[10px] font-black uppercase tracking-widest text-[#141414]/65">QUESTION 2 // MINIMAL NORMAL WORKFLOW</h2>
             <h3 className="text-2xl font-black uppercase tracking-tight font-mono mt-1">Enter. Obey the next action. Work when authorized. Finish.</h3>
           </div>
           <div className="border-2 border-[#141414] bg-[#111827] text-slate-100 p-5 shadow-[6px_6px_0px_0px_rgba(20,20,20,1)] overflow-x-auto">
             <pre className="font-mono text-xs leading-6 whitespace-pre">{`human/task intent
   -> agent-loop enter <task-id> --format=json
   -> obey next_action_kind / next_action
-  -> host-native implementation when authorized
+  -> host-native implementation when authorized (mutation_ready: true)
   -> agent-loop finish <task-id> --format=json
   -> obey next_action_kind / next_action
-  -> complete`}</pre>
+  -> complete (next_action_kind: "none")`}</pre>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {workflowSteps.map((step, index) => (
@@ -252,6 +414,7 @@ export default function LandingPage({ onLaunchSandbox }: LandingPageProps) {
           </div>
         </section>
 
+        {/* SECTION 3: STRUCTURED ROUTING */}
         <section className="space-y-5">
           <div>
             <h2 className="font-mono text-[10px] font-black uppercase tracking-widest text-[#141414]/65">STRUCTURED ROUTING</h2>
@@ -270,23 +433,182 @@ export default function LandingPage({ onLaunchSandbox }: LandingPageProps) {
           </p>
         </section>
 
+        {/* SECTION 4: EVIDENCE VS CLAIMS (STANDALONE SECTION) */}
+        <section className="space-y-6">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div>
+              <h2 className="font-mono text-[10px] font-black uppercase tracking-widest text-[#141414]/65">QUESTION 4 // EVIDENCE VS CLAIMS</h2>
+              <h3 className="text-2xl font-black uppercase tracking-tight font-mono mt-1">Why chat assertions fail governance.</h3>
+              <p className="text-sm text-slate-700 mt-2 max-w-2xl">
+                In un-governed agent sessions, proof is conflated with prose. Agent Loop treats natural language assertions as unverified claims until package owners record tangible evidence.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 font-mono text-xs font-bold shrink-0 bg-white border border-[#141414] p-2">
+              <Scale className="w-4 h-4 text-indigo-700" />
+              <span>Claims ≠ Evidence</span>
+            </div>
+          </div>
+
+          <div className="border-2 border-[#141414] bg-white shadow-[6px_6px_0px_0px_rgba(20,20,20,1)] overflow-hidden">
+            {/* Tab selector for evidence domains */}
+            <div className="grid grid-cols-2 md:grid-cols-4 border-b-2 border-[#141414] bg-[#F0EFEC] divide-x divide-[#141414] font-mono text-xs">
+              {evidenceComparisons.map((item, idx) => (
+                <button
+                  key={item.domain}
+                  onClick={() => setSelectedEvidenceIdx(idx)}
+                  className={`p-3 text-left font-black uppercase transition-colors cursor-pointer ${
+                    selectedEvidenceIdx === idx ? "bg-[#141414] text-[#E4E3E0]" : "hover:bg-slate-200 text-slate-800"
+                  }`}
+                >
+                  <div className="text-[9px] text-slate-400 mb-0.5">0{idx + 1} // DOMAIN</div>
+                  <div className="truncate">{item.domain}</div>
+                </button>
+              ))}
+            </div>
+
+            {/* Side-by-side claim vs evidence comparison */}
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* The Un-Governed Claim */}
+                <div className="border-2 border-rose-700 bg-rose-50/70 p-5 space-y-3">
+                  <div className="flex items-center justify-between gap-2 border-b border-rose-300 pb-2">
+                    <span className="font-mono text-[10px] font-black uppercase text-rose-800 flex items-center gap-1.5">
+                      <XCircle className="w-4 h-4 text-rose-600" />
+                      The Conversational Claim (Chat)
+                    </span>
+                    <span className="text-[10px] font-mono bg-rose-200 text-rose-900 px-1.5 py-0.5 uppercase font-bold">Unverifiable</span>
+                  </div>
+                  <div className="font-mono text-xs bg-white border border-rose-200 p-3 italic text-slate-800">
+                    "{activeEvidence.claim}"
+                  </div>
+                  <div>
+                    <h5 className="font-mono text-[10px] font-black uppercase text-rose-900">Why this fails engineering rigor:</h5>
+                    <p className="text-xs text-rose-950 mt-1 leading-relaxed">{activeEvidence.claimFlaw}</p>
+                  </div>
+                </div>
+
+                {/* The Governed Evidence */}
+                <div className="border-2 border-emerald-700 bg-emerald-50/70 p-5 space-y-3">
+                  <div className="flex items-center justify-between gap-2 border-b border-emerald-300 pb-2">
+                    <span className="font-mono text-[10px] font-black uppercase text-emerald-800 flex items-center gap-1.5">
+                      <CheckCircle className="w-4 h-4 text-emerald-600" />
+                      Governed Evidence (Owner Artifact)
+                    </span>
+                    <span className="text-[10px] font-mono bg-emerald-200 text-emerald-900 px-1.5 py-0.5 uppercase font-bold">Auditable</span>
+                  </div>
+                  <div className="font-mono text-xs bg-[#111827] text-emerald-300 border border-emerald-700 p-3 break-all">
+                    {activeEvidence.evidenceArtifact}
+                  </div>
+                  <div>
+                    <h5 className="font-mono text-[10px] font-black uppercase text-emerald-900">How Agent Loop enforces it:</h5>
+                    <p className="text-xs text-emerald-950 mt-1 leading-relaxed">{activeEvidence.evidenceCheck}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-[#141414]/15 pt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-slate-600 font-mono">
+                <div>
+                  <span className="font-bold text-slate-900 uppercase">Enforcing Package: </span>
+                  <code className="bg-slate-200 px-1.5 py-0.5 text-slate-800 font-bold">{activeEvidence.ownerPackage}</code>
+                </div>
+                <div className="text-[11px] text-slate-500">
+                  Evidence identity is sealed to the working-tree revision and active Contract hash.
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* SECTION 5: WHICH DECISIONS REMAIN HUMAN-OWNED? */}
         <section className="space-y-6">
           <div>
-            <h2 className="font-mono text-[10px] font-black uppercase tracking-widest text-[#141414]/65">THE COMPOSABLE ECOSYSTEM</h2>
-            <h3 className="text-2xl font-black uppercase tracking-tight font-mono mt-1">Focused packages, explicit owners.</h3>
+            <h2 className="font-mono text-[10px] font-black uppercase tracking-widest text-[#141414]/65">QUESTION 3 // AUTHORITY BOUNDARIES</h2>
+            <h3 className="text-2xl font-black uppercase tracking-tight font-mono mt-1">Which decisions remain human-owned?</h3>
+            <p className="text-sm text-slate-700 mt-2 max-w-2xl">
+              Governance does not mean replacing humans with autonomous agents. It means making the hand-offs explicit so authority is never silently abdicated.
+            </p>
+          </div>
+
+          <div className="border-2 border-[#141414] bg-white shadow-[6px_6px_0px_0px_rgba(20,20,20,1)] divide-y-2 divide-[#141414]">
+            {decisionBoundaries.map((boundary, i) => (
+              <div key={i} className="p-5 flex flex-col md:flex-row md:items-start justify-between gap-4 hover:bg-[#F9F8F6] transition-colors">
+                <div className="space-y-1.5 md:max-w-xl">
+                  <div className="flex items-center gap-2">
+                    <span className={`font-mono text-[9px] font-black uppercase px-2 py-0.5 border ${
+                      boundary.role === "Human-Owned"
+                        ? "bg-amber-300 text-amber-950 border-[#141414]"
+                        : boundary.role === "Kernel-Enforced"
+                        ? "bg-indigo-100 text-indigo-950 border-indigo-300"
+                        : "bg-slate-100 text-slate-800 border-slate-300"
+                    }`}>
+                      {boundary.role}
+                    </span>
+                    <h4 className="font-mono font-black text-sm uppercase text-[#141414]">{boundary.decision}</h4>
+                  </div>
+                  <p className="text-xs text-slate-700 leading-relaxed">{boundary.justification}</p>
+                </div>
+                <div className="font-mono text-[11px] bg-[#F0EFEC] border border-[#141414]/30 p-2.5 shrink-0 max-w-sm">
+                  <div className="text-[9px] text-slate-500 uppercase font-black mb-1">Enforcement Mechanism</div>
+                  <div className="text-slate-800 font-semibold break-all">{boundary.mechanism}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* SECTION 6: THE COMPOSABLE ECOSYSTEM */}
+        <section className="space-y-6">
+          <div>
+            <h2 className="font-mono text-[10px] font-black uppercase tracking-widest text-[#141414]/65">QUESTION 5 // PACKAGE RESPONSIBILITIES</h2>
+            <h3 className="text-2xl font-black uppercase tracking-tight font-mono mt-1">9 focused packages, explicit ownership boundaries.</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {packages.map(([badge, name, role, text]) => (
-              <article key={name} className="border-2 border-[#141414] bg-white p-5 shadow-[4px_4px_0px_0px_rgba(20,20,20,1)]">
-                <div className="flex items-center justify-between gap-2 mb-3"><span className="font-mono text-[9px] font-black bg-amber-300 border border-[#141414] px-2 py-0.5">{badge}</span><PackageCheck className="w-4 h-4" /></div>
-                <h4 className="font-mono font-black text-sm">{name}</h4>
-                <div className="font-mono text-[10px] uppercase tracking-wider text-slate-500 mt-1">{role}</div>
-                <p className="text-xs text-slate-700 leading-relaxed mt-3">{text}</p>
+            {packages.map((pkg) => (
+              <article key={pkg.name} className="border-2 border-[#141414] bg-white p-5 shadow-[4px_4px_0px_0px_rgba(20,20,20,1)] flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <span className="font-mono text-[9px] font-black bg-amber-300 border border-[#141414] px-2 py-0.5">{pkg.badge}</span>
+                    <PackageCheck className="w-4 h-4 text-slate-700" />
+                  </div>
+                  <h4 className="font-mono font-black text-sm">{pkg.name}</h4>
+                  <div className="font-mono text-[10px] uppercase tracking-wider text-slate-500 mt-1">{pkg.role}</div>
+                  <p className="text-xs text-slate-700 leading-relaxed mt-3">{pkg.responsibility}</p>
+                </div>
+                <div className="mt-4 pt-3 border-t border-slate-200">
+                  <div className="font-mono text-[9px] font-bold text-slate-500 uppercase">Ownership Boundary:</div>
+                  <p className="text-[11px] text-slate-600 font-sans mt-0.5">{pkg.boundary}</p>
+                </div>
               </article>
             ))}
           </div>
         </section>
 
+        {/* SECTION 7: WHEN TO NOT USE AGENT LOOP */}
+        <section className="space-y-6">
+          <div>
+            <h2 className="font-mono text-[10px] font-black uppercase tracking-widest text-[#141414]/65">QUESTION 6 // HONEST BOUNDARIES</h2>
+            <h3 className="text-2xl font-black uppercase tracking-tight font-mono mt-1">When should someone NOT use Agent Loop?</h3>
+            <p className="text-sm text-slate-700 mt-2 max-w-2xl">
+              Technical credibility requires knowing where a tool stops being appropriate. Agent Loop is an engineering governance system, not a generic AI wrapper.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {whenNotToUse.map((item, idx) => (
+              <div key={idx} className="border-2 border-[#141414] bg-white p-5 shadow-[4px_4px_0px_0px_rgba(20,20,20,1)] flex gap-3.5 items-start">
+                <div className="w-7 h-7 bg-amber-100 border border-amber-500 flex items-center justify-center font-mono font-black text-xs text-amber-900 shrink-0 mt-0.5">
+                  ✕
+                </div>
+                <div className="space-y-1">
+                  <h4 className="font-mono font-black text-sm uppercase text-[#141414]">{item.title}</h4>
+                  <p className="text-xs text-slate-700 leading-relaxed">{item.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* SECTION 8: CLI PLAYBOOK */}
         <section className="border-2 border-[#141414] bg-white shadow-[6px_6px_0px_0px_rgba(20,20,20,1)] overflow-hidden">
           <div className="px-5 py-4 border-b-2 border-[#141414] bg-[#F0EFEC] flex items-center justify-between gap-4">
             <div>
@@ -311,12 +633,14 @@ export default function LandingPage({ onLaunchSandbox }: LandingPageProps) {
           </div>
         </section>
 
+        {/* SECTION 9: ARCHITECTURAL PILLARS */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="border-2 border-[#141414] bg-white p-5"><ShieldCheck className="w-5 h-5 mb-3" /><div className="font-mono text-[10px] font-black text-slate-500">01 / OWNER AUTHORITY</div><h3 className="font-mono font-black uppercase mt-1">One semantic owner per decision</h3><p className="text-xs text-slate-700 leading-relaxed mt-3">Loop coordinates cross-package policy while Kanban, Session, Map, Recall, and Learning keep their own state and semantics.</p></div>
           <div className="border-2 border-[#141414] bg-white p-5"><GitBranch className="w-5 h-5 mb-3" /><div className="font-mono text-[10px] font-black text-slate-500">02 / VERSIONED CONSENT</div><h3 className="font-mono font-black uppercase mt-1">Approval binds one Contract revision</h3><p className="text-xs text-slate-700 leading-relaxed mt-3">Changed authority means a new decision. Ordinary discovery and implementation inside the approved boundary do not need ceremonial re-approval.</p></div>
           <div className="border-2 border-[#141414] bg-white p-5"><Search className="w-5 h-5 mb-3" /><div className="font-mono text-[10px] font-black text-slate-500">03 / BOUNDED CONTEXT</div><h3 className="font-mono font-black uppercase mt-1">Curation over context landfill</h3><p className="text-xs text-slate-700 leading-relaxed mt-3">Map and Recall provide targeted source/navigation facts and task-scoped guidance instead of treating every old note as equally authoritative.</p></div>
         </section>
 
+        {/* SECTION 10: DOGFOODED GOVERNANCE */}
         <section className="border-2 border-[#141414] bg-[#141414] text-white p-6 md:p-8 shadow-[6px_6px_0px_0px_rgba(251,191,36,1)]">
           <div className="grid grid-cols-1 md:grid-cols-[1fr_1.2fr] gap-8 items-center">
             <div>
@@ -330,6 +654,7 @@ export default function LandingPage({ onLaunchSandbox }: LandingPageProps) {
           </div>
         </section>
 
+        {/* SECTION 11: ENGINE & PLATFORM CREDENTIALS */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="border-2 border-[#141414] bg-white p-6 space-y-4">
             <div className="flex items-center gap-3"><Wrench className="w-5 h-5" /><h3 className="font-mono font-black uppercase">Built in PHP for inspectability</h3></div>
@@ -341,6 +666,7 @@ export default function LandingPage({ onLaunchSandbox }: LandingPageProps) {
           </div>
         </section>
 
+        {/* SECTION 12: FAQS */}
         <section className="space-y-4">
           <div><h2 className="font-mono text-[10px] font-black uppercase tracking-widest text-[#141414]/65">TECHNICAL ENQUIRIES</h2><h3 className="text-2xl font-black uppercase tracking-tight font-mono mt-1">Frequently answered queries</h3></div>
           <div className="border-2 border-[#141414] divide-y-2 divide-[#141414] bg-white">
@@ -356,6 +682,7 @@ export default function LandingPage({ onLaunchSandbox }: LandingPageProps) {
           </div>
         </section>
 
+        {/* SECTION 13: CALL TO ACTION FOOTER */}
         <section className="text-center border-2 border-[#141414] bg-amber-300 p-8 shadow-[6px_6px_0px_0px_rgba(20,20,20,1)] space-y-4">
           <div className="flex justify-center gap-3"><User className="w-5 h-5" /><Brain className="w-5 h-5" /><FileCheck className="w-5 h-5" /><Map className="w-5 h-5" /><Activity className="w-5 h-5" /></div>
           <h3 className="font-mono text-2xl font-black uppercase">Make the hand-offs explicit.</h3>
@@ -369,3 +696,4 @@ export default function LandingPage({ onLaunchSandbox }: LandingPageProps) {
     </div>
   );
 }
+

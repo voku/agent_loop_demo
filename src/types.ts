@@ -3,36 +3,69 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export interface VirtualFile {
-  name: string;
-  path: string;
-  content: string;
-  language: "markdown" | "json" | "php";
-  category: "board" | "workflow" | "session" | "recall" | "map" | "learning" | "config" | "source";
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+export type SandboxStage =
+  | "start"
+  | "plan_requested"
+  | "planned"
+  | "approval_required"
+  | "approved"
+  | "mutation_ready"
+  | "implemented"
+  | "validated"
+  | "complete";
+
+export interface HistoryEntry {
+  readonly kind: "command" | "output" | "success" | "human";
+  readonly text: string;
 }
 
-export interface TerminalLine {
-  type: "input" | "output" | "error" | "success" | "warning";
-  text: string;
-  timestamp?: string;
+export interface SandboxAction {
+  readonly label: string;
+  readonly command?: string;
+  readonly nextStage: SandboxStage;
+  readonly entries: readonly HistoryEntry[];
 }
 
-export type StepId = 
-  | "init"
-  | "board"
-  | "plan"
-  | "approve"
-  | "recall"
-  | "work"
-  | "verify"
-  | "close"
-  | "learn"
-  | "memory";
-
-export interface DemoStep {
-  id: StepId;
-  title: string;
-  description: string;
-  command: string;
-  highlightWords: string[];
+export interface CliCommand {
+  readonly cmd: string;
+  readonly description: string;
+  readonly does: string;
+  readonly doesNot: string;
+  readonly input: string;
+  readonly output: string;
 }
+
+export interface EvidenceComparison {
+  readonly domain: string;
+  readonly claim: string;
+  readonly claimFlaw: string;
+  readonly evidenceArtifact: string;
+  readonly evidenceCheck: string;
+  readonly ownerPackage: string;
+}
+
+export interface HumanDecisionBoundary {
+  readonly role: "Human-Owned" | "Kernel-Enforced" | "Host-Native";
+  readonly decision: string;
+  readonly justification: string;
+  readonly mechanism: string;
+}
+
+export interface PackageSpec {
+  readonly badge: string;
+  readonly name: string;
+  readonly role: string;
+  readonly responsibility: string;
+  readonly boundary: string;
+}
+
+export interface FaqItem {
+  readonly q: string;
+  readonly a: string;
+}
+
