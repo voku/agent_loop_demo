@@ -1,778 +1,371 @@
 import React, { useState } from "react";
 import {
-  Terminal as TermIcon,
-  GitPullRequest,
-  ArrowRight,
-  CheckCircle,
-  AlertTriangle,
-  Brain,
-  Layers,
-  Cpu,
-  User,
-  ShieldCheck,
-  FileCheck,
-  FileText,
-  Map,
-  Copy,
-  Check,
   Activity,
-  Maximize2,
-  HelpCircle
+  ArrowRight,
+  Brain,
+  Check,
+  Copy,
+  FileCheck,
+  GitBranch,
+  GitPullRequest,
+  Layers,
+  Map,
+  PackageCheck,
+  Search,
+  ShieldCheck,
+  Terminal as TermIcon,
+  User,
+  Wrench
 } from "lucide-react";
 
 interface LandingPageProps {
   onLaunchSandbox: () => void;
 }
 
+interface CliCommand {
+  readonly cmd: string;
+  readonly description: string;
+  readonly does: string;
+  readonly doesNot: string;
+  readonly input: string;
+  readonly output: string;
+}
+
+const cliCommands: Readonly<Record<string, CliCommand>> = {
+  enter: {
+    cmd: "vendor/bin/agent-loop enter DEMO-1 --format=json",
+    description: "Read the current owner-backed lifecycle state and receive the canonical next action.",
+    does: "Reconciles deterministic post-approval preparation when needed and returns mutation_ready, next_action_kind, next_action, and owner-backed references.",
+    doesNot: "Invent a parallel phase order or silently broaden human-approved task authority.",
+    input: "Task id + durable Contract/Run state",
+    output: "Structured lifecycle projection with the current next action"
+  },
+  plan: {
+    cmd: "vendor/bin/agent-loop workflow plan DEMO-1 --by lars --file src/Signup.php --goal \"Add validated signup guards.\" --validation \"composer test\"",
+    description: "Persist a durable candidate Contract for the task when enter requests planning.",
+    does: "Records task intent, mutation scope, validation, acceptance criteria, and selected policy as a versioned candidate Contract.",
+    doesNot: "Create a governed Run, allocate a Session, compile Recall, or constitute human approval.",
+    input: "User intent + bounded repository evidence",
+    output: "Candidate Contract revision"
+  },
+  finish: {
+    cmd: "vendor/bin/agent-loop finish DEMO-1 --format=json",
+    description: "Use the lifecycle kernel as the deterministic close-out front door.",
+    does: "Reconciles implementation-bound evidence and routes the first decisive validation, review, Learning, risk, or close action through next_action_kind / next_action.",
+    doesNot: "Require the host to maintain a copied checklist of internal gates or infer workflow legality from file paths.",
+    input: "Current approved Contract + implementation/evidence identity",
+    output: "Canonical next action or complete/none"
+  },
+  status: {
+    cmd: "vendor/bin/agent-loop workflow status DEMO-1 --format=json",
+    description: "Inspect durable lifecycle state without creating a second happy path.",
+    does: "Provides a read-only diagnostic projection for recovery, debugging, and external integrations.",
+    doesNot: "Override fresh owner authority or replace enter/finish as the ordinary host contract.",
+    input: "Task id",
+    output: "Read-only workflow status"
+  },
+  edit: {
+    cmd: "vendor/bin/agent-loop edit 'App\\Service\\UserService::save' -- 'Reject inactive users before persistence.'",
+    description: "Prepare a specialist exact-target edit bundle when symbol-scoped work is useful.",
+    does: "Uses agent-map and bounded Recall to resolve a precise edit target and prepare auditable context.",
+    doesNot: "Turn every ordinary task into a mandatory edit-bundle workflow.",
+    input: "Target symbol + bounded edit intent",
+    output: "Specialist execution bundle"
+  }
+};
+
+const workflowSteps = [
+  { label: "Enter", text: "Ask the lifecycle kernel for the current state and canonical next action." },
+  { label: "Contract", text: "Persist task intent and scope only when the kernel asks for planning." },
+  { label: "Authority", text: "A human approves the exact Contract revision when a real decision boundary is reached." },
+  { label: "Host Work", text: "Implement with normal repository tools only when mutation is authorized." },
+  { label: "Finish", text: "Let the kernel reconcile evidence and expose the next decisive action." },
+  { label: "Complete", text: "Stop when next_action_kind is none and the governed Run is complete." }
+] as const;
+
+const nextActionKinds = [
+  ["command", "Execute the returned command as written."],
+  ["command_template", "Fill model-owned placeholders from current task intent and repository evidence, then execute it."],
+  ["decision_required", "Present the exact authority-bearing subject to a human before continuing."],
+  ["host_work", "Perform the described implementation or model work using repository-native tools."],
+  ["none", "No further lifecycle action is required."]
+] as const;
+
+const packages = [
+  ["CORE", "voku/agent-loop", "Kernel & Governance", "Contract/Run lifecycle, cross-owner policy, approvals, routing, quality gates, and host-facing projections."],
+  ["BOARD", "voku/agent-kanban", "Board & Tasks", "Git-native Markdown work items, deterministic parsing, revision identity, and safe board mutation."],
+  ["STATE", "voku/agent-session", "Working Memory", "Task-local mutable session state, validation evidence, checkpoints, and pruneable retention."],
+  ["INTEL", "voku/agent-map", "Code Intelligence", "Structural and semantic PHP repository maps, search, callers, callees, impact, and edit context."],
+  ["RECALL", "voku/agent-recall-compiler", "Context & Prompts", "Governed briefing, provenance, task-scoped Recall, review semantics, and L2 operating-prompt recipes."],
+  ["LEARN", "voku/agent-learning", "Durable Learning", "Reviewable findings, LearningNotes, proposals, evidence, lineage, and durable Learning decisions."],
+  ["RUN", "voku/agent-loop-runner", "Execution Plane", "Optional external process supervisor with isolated Git worktrees and coding-host adapters."],
+  ["UI", "voku/agent-ui", "Control Plane", "Local server-rendered human cockpit for board, task workbench, evidence, and code-intelligence views."],
+  ["SKILLS", "voku/agent-skills", "Guidance Catalog", "Portable engineering skills, review lenses, and reusable static-analysis guidance."]
+] as const;
+
+const faqItems = [
+  {
+    q: "Is agent-loop another coding agent?",
+    a: "No. The coding host still performs implementation. agent-loop is the local workflow kernel around that host: durable task authority, bounded context, evidence, review, Learning, and canonical next-action routing. It is intentionally provider-independent."
+  },
+  {
+    q: "Why is the happy path now enter -> work -> finish?",
+    a: "Because the host should not duplicate the internal gate machine. enter and finish expose executable owner-backed policy through next_action_kind and next_action. Lower-level map, session, recall, review, learn, edit, and verify commands remain available for diagnostics, specialist work, CI, and recovery."
+  },
+  {
+    q: "Does approval lock every discovered file forever?",
+    a: "Approval seals the exact Contract revision and its mutation boundary. Discovery inside that approved boundary is ordinary implementation work. A real change to scope, product intent, policy, acceptance, accepted risk, or another authority-bearing decision can require a new human decision."
+  },
+  {
+    q: "Does agent-loop run PHPUnit or PHPStan itself?",
+    a: "Project tools remain project tools. agent-loop binds and evaluates evidence through the workflow owners instead of pretending that conversational claims are proof. Validation commands belong to the repository Contract and can be routed as lifecycle actions."
+  },
+  {
+    q: "Why PHP 8.3+?",
+    a: "The orchestration layer stays inspectable, local, Composer-native, and easy to dogfood inside ordinary PHP repositories. The tool can be modified, tested, and reviewed with the same language and engineering controls as the projects it governs."
+  }
+] as const;
+
 export default function LandingPage({ onLaunchSandbox }: LandingPageProps) {
   const [copiedText, setCopiedText] = useState(false);
-  const [selectedCliTab, setSelectedCliTab] = useState<string>("plan");
+  const [selectedCliTab, setSelectedCliTab] = useState<keyof typeof cliCommands>("enter");
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText("composer require voku/agent-loop --dev");
+    navigator.clipboard.writeText("composer require --dev voku/agent-loop");
     setCopiedText(true);
     setTimeout(() => setCopiedText(false), 2000);
   };
 
-  const cliCommands = {
-    plan: {
-      cmd: "vendor/bin/agent-loop workflow plan DEMO-1",
-      description: "Generates a versioned work-brief candidate for the targeted backlog task.",
-      does: "Analyzes the backlog card, extracts in-scope and out-of-scope files, and drafts a candidate specification file in JSON.",
-      doesNot: "Modify active codebase files, execute coding agents, or make changes to any production directories.",
-      input: "todo/cards/DEMO-1.md",
-      output: "session_plan/2026-07-14-demo-1/work-brief.json"
-    },
-    approve: {
-      cmd: "vendor/bin/agent-loop workflow approve DEMO-1 --by lars",
-      description: "Records formal human developer authorization of the current work-brief revision.",
-      does: "Verifies the brief matches the current target task, signs the brief status as 'approved', and locks the scope contract.",
-      doesNot: "Generate patches, compile guidelines, or run codebase analyses.",
-      input: "session_plan/2026-07-14-demo-1/work-brief.json (candidate)",
-      output: "session_plan/2026-07-14-demo-1/work-brief.json (status: approved)"
-    },
-    map: {
-      cmd: "vendor/bin/agent-loop map build",
-      description: "Analyzes codebase structure and compiles a lightweight Abstract Syntax Tree (AST) token guide.",
-      does: "Parses symbols, types, namespace hierarchies, and signatures in a highly compressed JSON dictionary for the agent's reference.",
-      doesNot: "Retrieve external embeddings, connect to vector databases, or edit code files.",
-      input: "src/*.php",
-      output: ".agent-map/php-symbols.json"
-    },
-    verify: {
-      cmd: "vendor/bin/agent-loop verify --strict",
-      description: "Verifies workflow coherence, file consistency, and presence of registered external validation logs.",
-      does: "Asserts that the applied file diffs match the approved brief scope, and verifies external test suite logs (PHPUnit/PHPStan) exist and passed.",
-      doesNot: "Execute the test runner itself (such as vendor/bin/phpunit) directly. It verifies external evidence files.",
-      input: "session_plan/2026-07-14-demo-1/work-brief.json, src/Signup.php",
-      output: "session_plan/2026-07-14-demo-1/verification_summary.json (consistency_verify: OK)"
-    },
-    learn: {
-      cmd: "vendor/bin/agent-loop learn validate --root infra/doc/agent-learning",
-      description: "Validates local temporary findings schemas generated during the active coding session.",
-      does: "Asserts syntax coherence, verifies the observation records, and maps the localized learnings back to targeted symbol structures.",
-      doesNot: "Commit durable rules or automatically edit project guidelines.",
-      input: "infra/doc/agent-learning/findings/*.json",
-      output: "Schema verification results logged to console."
-    },
-    evaluate: {
-      cmd: "vendor/bin/agent-loop learn guidance-evaluate --root infra/doc/agent-learning --write-candidates",
-      description: "Evaluates the historical usefulness of guidelines and drafts durable rule candidate proposals.",
-      does: "Scans outcome journals, updates recall metrics, purges unused cache, and writes candidate proposals for global promotion.",
-      doesNot: "Merge proposals into active guidelines. Proposals are candidates requiring human validation.",
-      input: "infra/doc/agent-learning/findings/*.json, recall-logs.json",
-      output: "infra/doc/agent-learning/proposals/candidate/proposal.*.json"
-    }
-  };
-
-  const workflowSteps = [
-    { label: "Task", text: "A concrete backlog card starts the loop." },
-    { label: "Approved Plan", text: "A human signs a scoped work brief." },
-    { label: "Selective Recall", text: "Only relevant rules are compiled for the agent." },
-    { label: "Implementation", text: "Your coding agent edits inside the contract." },
-    { label: "Verification", text: "Checks compare changes against approved scope." },
-    { label: "Evidence", text: "Logs and summaries become reviewable artifacts." },
-    { label: "Human Review", text: "A developer decides what is accepted." },
-    { label: "Durable Learning", text: "Useful findings can graduate into rules." }
-  ];
-
-  const dogfoodSteps = [
-    "Found issue",
-    "Recorded evidence",
-    "Verification",
-    "Learning proposal",
-    "Human review",
-    "Release"
-  ];
-
-  const faqItems = [
-    {
-      q: "Why PHP 8.3? Most AI engineering happens in Python or TypeScript.",
-      a: "This is a deliberate architectural advantage. Because the orchestration tool is written in interpreted PHP, the coding agent itself can inspect, fix, and improve its own tooling during execution. If a command is missing or validation logic is faulty, the agent can apply a patch, continue the session, and submit the tooling upgrade as part of the pull request. It empowers the system to improve its own workflow recursively."
-    },
-    {
-      q: "Is agent-loop a competitor to Claude Code, Aider, or Cursor?",
-      a: "No. It is a complementary workflow layer. You use existing high-performance agents (Aider, Claude Code, Cursor, OpenCode) to write the actual code. agent-loop wraps their execution in an explicit engineering contract: planning, scope locking, selective recall compiled prior to execution, and rigorous verification gates."
-    },
-    {
-      q: "What is 'context landfill' and how does agent-loop solve it?",
-      a: "In naive autonomous structures, we paste everything—past chat logs, general markdown rules, old bug summaries—into the prompt. Over time, the context window swells with contradictory or irrelevant instructions. The agent repeats mistakes because of too much noise. agent-loop enforces explicit lifecycle stages. It separates temporary working files from durable knowledge, compiling only task-specific, triaged guidance for the agent prior to execution, and intentionally forgetting obsolete caching."
-    },
-    {
-      q: "What does agent-loop verify if it doesn't run PHPUnit or PHPStan directly?",
-      a: "agent-loop verify enforces architectural coherence. It checks that the modified files are strictly inside the approved brief's scope, that no unapproved files were changed, and that the external testing engines (like PHPUnit or PHPStan) have indeed generated a successful passing log. This decoupling ensures agent-loop remains a lean, deterministic validator of the hand-offs, rather than wrapping heavy external processes."
-    },
-    {
-      q: "How does the 'Re-planning invalidates approval' rule work?",
-      a: "If Human Reviewer Lars approves Revision 1 of a work brief, but then the task requirements shift and a new file is added to the scope, agent-loop marks Revision 1 as 'superseded' and invalidates the approval state. The CLI blocks execution until Lars reviews and formally approves the Revision 2 candidate brief. This protects repositories from scope creep and rogue agent edits."
-    }
-  ];
+  const selectedCommand = cliCommands[selectedCliTab];
 
   return (
     <div className="bg-[#E4E3E0] text-[#141414] min-h-screen font-sans antialiased selection:bg-[#141414] selection:text-white pb-16">
-      
-      {/* Neo-brutalist Header */}
-      <div className="border-b-2 border-[#141414] bg-[#F0EFEC] px-6 py-4 sticky top-0 z-50 select-none">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#141414] text-[#E4E3E0] flex items-center justify-center font-bold font-mono text-sm tracking-tighter">
-              AL_
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
+      <header className="border-b-2 border-[#141414] bg-[#F0EFEC] px-6 py-4 sticky top-0 z-50 select-none">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 bg-[#141414] text-[#E4E3E0] flex items-center justify-center font-bold font-mono text-sm tracking-tighter shrink-0">AL_</div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-black text-sm md:text-base uppercase tracking-widest">agent-loop</span>
-                <span className="bg-[#141414] text-[#E4E3E0] text-[9px] font-mono font-bold px-1.5 py-0.2 uppercase border border-[#141414]">
-                  PHP 8.3+ CLI
-                </span>
-                <span className="bg-emerald-100 text-emerald-800 text-[9px] font-mono font-black px-1.5 py-0.2 border border-emerald-400">
-                  Current
-                </span>
+                <span className="bg-[#141414] text-[#E4E3E0] text-[9px] font-mono font-bold px-1.5 py-0.5 uppercase">PHP 8.3+ CLI</span>
+                <span className="bg-emerald-100 text-emerald-800 text-[9px] font-mono font-black px-1.5 py-0.5 border border-emerald-400">LOCAL-FIRST</span>
               </div>
-              <p className="text-[10px] text-[#141414]/75 font-mono uppercase tracking-widest mt-0.5">
-                Local Governance Protocol for AI Coding Workflows
-              </p>
+              <p className="text-[10px] text-[#141414]/75 font-mono uppercase tracking-widest mt-0.5 truncate">Governed lifecycle for coding-agent work</p>
             </div>
           </div>
-
-          <div className="flex items-center gap-4">
-            <button
-              onClick={onLaunchSandbox}
-              className="px-4 py-2 bg-amber-400 hover:bg-amber-500 text-[#141414] font-black font-mono text-xs uppercase tracking-wider border-2 border-[#141414] shadow-[3px_3px_0px_0px_rgba(20,20,20,1)] hover:translate-y-[-1px] active:translate-y-[1px] transition-all cursor-pointer"
-            >
-              Launch Interactive Sandbox
-            </button>
-          </div>
+          <button
+            onClick={onLaunchSandbox}
+            className="px-4 py-2 bg-amber-400 hover:bg-amber-500 text-[#141414] font-black font-mono text-xs uppercase tracking-wider border-2 border-[#141414] shadow-[3px_3px_0px_0px_rgba(20,20,20,1)] cursor-pointer shrink-0"
+          >
+            Lifecycle Sandbox
+          </button>
         </div>
-      </div>
+      </header>
 
-      {/* Main Landing Page Content */}
-      <div className="max-w-5xl mx-auto px-6 pt-12 md:pt-16 space-y-16">
-        
-        {/* HERO SECTION */}
-        <div className="space-y-6 text-center max-w-3xl mx-auto">
+      <main className="max-w-5xl mx-auto px-6 pt-12 md:pt-16 space-y-16">
+        <section className="space-y-6 text-center max-w-3xl mx-auto">
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-white border border-[#141414]/15 font-mono text-[10px] font-bold text-slate-600 uppercase tracking-wider rounded-full">
             <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse" />
-            <span>Open-Source Local Orchestration CLI</span>
+            Open-source local orchestration CLI
           </div>
-          <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tight text-[#141414] leading-[1.1] font-mono">
-            Better workflows beat bigger context windows.
-          </h1>
-          <p className="text-sm md:text-base text-slate-700 leading-relaxed max-w-2xl mx-auto font-sans">
-            Your coding agent doesn’t need more memory. It needs a governed workflow.
-            <strong className="text-[#141414]"> agent-loop</strong> treats AI-assisted coding as an engineering process: plan, approve, recall, implement, verify, review, and only then promote durable learning.
+          <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tight leading-[1.1] font-mono">Better workflows beat bigger context windows.</h1>
+          <p className="text-sm md:text-base text-slate-700 leading-relaxed max-w-2xl mx-auto">
+            Your coding agent does not need a second hidden state machine in its prompt. It needs a governed workflow.
+            <strong className="text-[#141414]"> agent-loop</strong> keeps durable task authority, bounded context, implementation evidence, review, and Learning explicit while the coding host remains free to use normal repository tools.
           </p>
           <div className="inline-block bg-[#141414] text-[#F0EFEC] border-2 border-[#141414] px-4 py-2 font-mono text-[11px] font-black uppercase shadow-[4px_4px_0px_0px_rgba(251,191,36,1)]">
             Git versions code. Agent Loop versions engineering decisions.
           </div>
 
-          {/* Quick Copy Command Component */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
-            <div className="flex items-center bg-white border-2 border-[#141414] font-mono text-xs font-bold divide-x divide-[#141414] shadow-[4px_4px_0px_0px_rgba(20,20,20,1)] w-full max-w-sm sm:max-w-none sm:w-auto">
+            <div className="flex items-center bg-white border-2 border-[#141414] font-mono text-xs font-bold divide-x divide-[#141414] shadow-[4px_4px_0px_0px_rgba(20,20,20,1)] w-full max-w-md sm:w-auto">
               <span className="px-3 py-2.5 text-slate-400 select-none bg-slate-50">$</span>
-              <span className="px-4 py-2.5 text-slate-800 select-all font-semibold flex-1 sm:flex-initial">
-                composer require voku/agent-loop --dev
-              </span>
-              <button
-                onClick={copyToClipboard}
-                className="px-3 py-2.5 hover:bg-[#F0EFEC] active:bg-[#DAD9D6] transition-colors cursor-pointer text-[#141414]"
-                title="Copy package command"
-              >
+              <span className="px-4 py-2.5 text-slate-800 select-all font-semibold flex-1">composer require --dev voku/agent-loop</span>
+              <button onClick={copyToClipboard} className="px-3 py-2.5 hover:bg-[#F0EFEC] cursor-pointer" title="Copy install command">
                 {copiedText ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
               </button>
             </div>
-            
-            <button
-              onClick={onLaunchSandbox}
-              className="w-full sm:w-auto px-5 py-3 bg-[#141414] hover:bg-slate-800 text-white font-black font-mono text-xs uppercase tracking-widest border-2 border-[#141414] flex items-center justify-center gap-2 shadow-[4px_4px_0px_0px_rgba(251,191,36,1)] hover:translate-x-[1px] active:translate-y-[1px] cursor-pointer"
-            >
-              <span>Simulate Local CLI</span>
+            <button onClick={onLaunchSandbox} className="w-full sm:w-auto px-5 py-3 bg-[#141414] hover:bg-slate-800 text-white font-black font-mono text-xs uppercase tracking-widest border-2 border-[#141414] flex items-center justify-center gap-2 shadow-[4px_4px_0px_0px_rgba(251,191,36,1)] cursor-pointer">
+              Explore lifecycle
               <ArrowRight className="w-4 h-4 text-amber-400" />
             </button>
           </div>
-        </div>
+        </section>
 
-        {/* METRICS & CREDIBILITY SUB-BANNER */}
-        <div className="grid grid-cols-2 md:grid-cols-4 border-2 border-[#141414] bg-[#F0EFEC] divide-x divide-y md:divide-y-0 divide-[#141414] text-center font-mono font-bold uppercase shadow-[6px_6px_0px_0px_rgba(20,20,20,1)] select-none">
-          <div className="py-4 px-2">
-            <div className="text-xl font-black text-[#141414]">PHP 8.3+</div>
-            <div className="text-[9px] text-slate-500 tracking-wider mt-0.5">CLI Architecture</div>
-          </div>
-          <div className="py-4 px-2">
-            <div className="text-xl font-black text-indigo-700">100% LOCAL</div>
-            <div className="text-[9px] text-slate-500 tracking-wider mt-0.5">No Cloud Lock-In</div>
-          </div>
-          <div className="py-4 px-2">
-            <div className="text-xl font-black text-emerald-700">6 PACKAGES</div>
-            <div className="text-[9px] text-slate-500 tracking-wider mt-0.5">Composable Ecosystem</div>
-          </div>
-          <div className="py-4 px-2">
-            <div className="text-xl font-black text-amber-600">ZERO GLUE</div>
-            <div className="text-[9px] text-slate-500 tracking-wider mt-0.5">Independent of APIs</div>
-          </div>
-        </div>
+        <section className="grid grid-cols-2 md:grid-cols-4 border-2 border-[#141414] bg-[#F0EFEC] divide-x divide-y md:divide-y-0 divide-[#141414] text-center font-mono font-bold uppercase shadow-[6px_6px_0px_0px_rgba(20,20,20,1)] select-none">
+          <div className="py-4 px-2"><div className="text-xl font-black">PHP 8.3+</div><div className="text-[9px] text-slate-500 tracking-wider mt-0.5">Runtime floor</div></div>
+          <div className="py-4 px-2"><div className="text-xl font-black text-indigo-700">LOCAL-FIRST</div><div className="text-[9px] text-slate-500 tracking-wider mt-0.5">Files + Git evidence</div></div>
+          <div className="py-4 px-2"><div className="text-xl font-black text-emerald-700">9 PACKAGES</div><div className="text-[9px] text-slate-500 tracking-wider mt-0.5">Focused ownership</div></div>
+          <div className="py-4 px-2"><div className="text-xl font-black text-amber-700">6 HOSTS</div><div className="text-[9px] text-slate-500 tracking-wider mt-0.5">Portable agent assets</div></div>
+        </section>
 
-        {/* WHY THIS EXISTS */}
-        <div className="grid grid-cols-1 md:grid-cols-[1.05fr_0.95fr] gap-6 items-stretch">
+        <section className="grid grid-cols-1 md:grid-cols-[1.05fr_0.95fr] gap-6 items-stretch">
           <div className="border-2 border-[#141414] bg-white p-6 space-y-4 shadow-[5px_5px_0px_0px_rgba(20,20,20,1)]">
-            <div className="space-y-1">
+            <div>
               <h2 className="font-mono text-[10px] font-black uppercase tracking-widest text-[#141414]/65">WHY THIS EXISTS</h2>
-              <h3 className="text-xl font-black uppercase tracking-tight font-mono">Prompt engineering scales poorly. Workflow engineering doesn’t.</h3>
+              <h3 className="text-xl font-black uppercase tracking-tight font-mono mt-1">Prompt piles decay. Owner-backed workflow state can be checked.</h3>
             </div>
             <p className="text-sm text-slate-700 leading-relaxed">
-              Existing coding-agent setups slowly decay because every failed session leaves behind another note, another rule file, and another half-remembered workaround. The context window becomes a junk drawer instead of an engineering contract.
+              Coding-agent setups tend to accumulate chat history, rules, workaround notes, and copied gate lists. Eventually the host is expected to remember workflow law from prose. agent-loop moves that authority into durable Contracts, package-owned state, and an executable lifecycle kernel.
             </p>
             <p className="text-sm text-slate-700 leading-relaxed">
-              Agent Loop exists to make the work around the agent explicit: who approved the plan, which files were in scope, what evidence proves the result, and which lessons deserve to become durable rules.
+              The goal is not maximum automation. It is explicit authority: what may change, which evidence belongs to the current implementation, which decision is human-owned, and what the next action actually is.
             </p>
           </div>
-
-          <div className="border-2 border-red-900 bg-red-50 p-5 space-y-3 shadow-[5px_5px_0px_0px_rgba(127,29,29,0.18)]">
-            <div className="font-mono text-[10px] font-black uppercase tracking-widest text-red-800">The familiar graveyard</div>
-            <div className="bg-white border border-red-200 p-4 font-mono text-[12px] leading-7 text-red-950 shadow-inner">
-              <div>MEMORY.md</div>
-              <div>project-rules.md</div>
-              <div>agent-notes.md</div>
-              <div>lessons-learned.md</div>
-              <div>MEMORY_FINAL.md</div>
-            </div>
-            <p className="text-xs text-red-950/80 leading-relaxed">
-              Everybody recognizes the joke because it is true: ungoverned memory files keep growing, but accountability does not.
-            </p>
-          </div>
-        </div>
-
-        {/* COMPARATIVE VISUALIZATION: LANDFILL VS GOVERNED LOOP */}
-        <div className="space-y-6">
-          <div className="space-y-1 text-center">
-            <h2 className="font-mono text-[10px] font-black uppercase tracking-widest text-[#141414]/65">THE CORE PROBLEM STATEMENT</h2>
-            <h3 className="text-xl font-black uppercase tracking-tight font-mono">Drowning in Context vs. Governing Hand-offs</h3>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
-            {/* Context Landfill Card */}
-            <div className="border-2 border-[#141414] bg-white p-5 space-y-4 shadow-[4px_4px_0px_0px_rgba(239,68,68,0.2)]">
-              <div className="flex items-center gap-2 border-b pb-3 border-red-200">
-                <div className="w-6 h-6 bg-red-100 text-red-700 rounded-full flex items-center justify-center text-xs font-bold">✗</div>
-                <div>
-                  <h4 className="font-mono text-xs font-black uppercase text-red-700">The Context Landfill Approach</h4>
-                  <p className="text-[9.5px] text-slate-400 font-mono">Endless accumulative accumulation</p>
-                </div>
-              </div>
-
-              <ul className="space-y-2.5 text-[11.5px] text-slate-600 font-sans">
-                <li className="flex items-start gap-2">
-                  <span className="text-red-500 font-mono font-bold mt-0.5">•</span>
-                  <span><strong>Endless context dump:</strong> Past logs, chat history, and contradictory <code>MEMORY.md</code> files are continually concatenated.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-red-500 font-mono font-bold mt-0.5">•</span>
-                  <span><strong>Invisible scope:</strong> The coding agent can modify any file in the workspace, causing silent regression or un-tracked changes.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-red-500 font-mono font-bold mt-0.5">•</span>
-                  <span><strong>Repeating past mistakes:</strong> Because transient hacks and durable rules are not segregated, agents easily reuse deprecated hacks.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-red-500 font-mono font-bold mt-0.5">•</span>
-                  <span><strong>Silent failure states:</strong> If tests fail, the agent struggles without scope boundaries, causing infinite loops of debugging.</span>
-                </li>
-              </ul>
-
-              <div className="bg-red-50 border border-red-100 p-2 text-[9.5px] font-mono text-red-950 leading-relaxed">
-                Result: Swelling token counts, sluggish feedback loops, high API costs, and silent architectural drift.
-              </div>
-            </div>
-
-            {/* Governed Loop Card */}
-            <div className="border-2 border-[#141414] bg-white p-5 space-y-4 shadow-[4px_4px_0px_0px_rgba(16,185,129,0.2)]">
-              <div className="flex items-center gap-2 border-b pb-3 border-emerald-200">
-                <div className="w-6 h-6 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center text-xs font-bold">✓</div>
-                <div>
-                  <h4 className="font-mono text-xs font-black uppercase text-emerald-700">The Governed Loop Protocol</h4>
-                  <p className="text-[9.5px] text-slate-400 font-mono">Versioned, explicit engineering stages</p>
-                </div>
-              </div>
-
-              <ul className="space-y-2.5 text-[11.5px] text-slate-600 font-sans">
-                <li className="flex items-start gap-2">
-                  <span className="text-emerald-500 font-mono font-bold mt-0.5">•</span>
-                  <span><strong>Versioned Work Briefs:</strong> The task scope is locked inside a brief. Any plan modification invalidates approval instantly.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-emerald-500 font-mono font-bold mt-0.5">•</span>
-                  <span><strong>Task-Scoped Selective Recall:</strong> Prior to coding, agent-loop compiles <em>only</em> relevant rules inside a clean folder.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-emerald-500 font-mono font-bold mt-0.5">•</span>
-                  <span><strong>Rigid Verification Gates:</strong> Decoupled verification ensures file diff bounds are matched, and evidence log existences verified.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-emerald-500 font-mono font-bold mt-0.5">•</span>
-                  <span><strong>Durable Learning Promotions:</strong> Findings are stored locally, requiring explicit human authorization to become global rules.</span>
-                </li>
-              </ul>
-
-              <div className="bg-emerald-50 border border-emerald-100 p-2 text-[9.5px] font-mono text-emerald-950 leading-relaxed">
-                Result: Minimal context sizes, deterministic scopes, complete audit logs, and zero repeating errors.
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        {/* WORKFLOW FIRST VISUAL */}
-        <div className="space-y-6">
-          <div className="space-y-1 text-center">
-            <h2 className="font-mono text-[10px] font-black uppercase tracking-widest text-[#141414]/65">WHAT HAPPENS WHEN YOU USE IT</h2>
-            <h3 className="text-xl font-black uppercase tracking-tight font-mono">A governed workflow before a component list</h3>
-          </div>
-
-          <div className="border-2 border-[#141414] bg-white p-5 shadow-[6px_6px_0px_0px_rgba(20,20,20,1)]">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-              {workflowSteps.map((step, idx) => (
-                <div key={step.label} className="relative border-2 border-[#141414] bg-[#F9F8F6] p-4 min-h-32 flex flex-col justify-between">
-                  <div className="absolute -top-3 -left-2 bg-amber-400 border-2 border-[#141414] px-2 py-0.5 font-mono text-[9px] font-black">
-                    {String(idx + 1).padStart(2, "0")}
-                  </div>
-                  <div>
-                    <h4 className="font-mono text-sm font-black uppercase text-[#141414] mt-2">{step.label}</h4>
-                    <p className="text-[11px] text-slate-600 leading-normal mt-2">{step.text}</p>
-                  </div>
-                  {idx < workflowSteps.length - 1 && (
-                    <ArrowRight className="hidden md:block absolute -right-4 top-1/2 -translate-y-1/2 w-5 h-5 bg-white border border-[#141414] rounded-full p-0.5 text-[#141414] z-10" />
-                  )}
-                </div>
+          <div className="border-2 border-[#141414] bg-[#141414] text-[#F0EFEC] p-6 shadow-[5px_5px_0px_0px_rgba(251,191,36,1)]">
+            <div className="font-mono text-[10px] font-black uppercase tracking-widest text-amber-300 mb-4">THE FAMILIAR GRAVEYARD</div>
+            <div className="space-y-2 font-mono text-sm">
+              {["MEMORY.md", "project-rules.md", "agent-notes.md", "lessons-learned.md", "MEMORY_FINAL.md"].map((name) => (
+                <div key={name} className="border border-white/20 px-3 py-2 bg-white/5">{name}</div>
               ))}
             </div>
+            <p className="text-xs text-slate-300 mt-4 leading-relaxed">More files can preserve more text without preserving which text still has authority. That distinction is the entire point.</p>
           </div>
-        </div>
+        </section>
 
-        {/* ARCHITECTURE DIAGRAM (TECHNICAL GRAPH) */}
-        <div className="space-y-6">
-          <div className="space-y-1 text-center">
-            <h2 className="font-mono text-[10px] font-black uppercase tracking-widest text-[#141414]/65">TECHNICAL WORKFLOW ARCHITECTURE</h2>
-            <h3 className="text-xl font-black uppercase tracking-tight font-mono">The Four-Actor Governed Execution Cycle</h3>
+        <section className="space-y-6">
+          <div>
+            <h2 className="font-mono text-[10px] font-black uppercase tracking-widest text-[#141414]/65">THE CURRENT HOST CONTRACT</h2>
+            <h3 className="text-2xl font-black uppercase tracking-tight font-mono mt-1">Enter. Obey the next action. Work when authorized. Finish.</h3>
           </div>
-
-          <div className="border-2 border-[#141414] bg-white shadow-[6px_6px_0px_0px_rgba(20,20,20,1)] overflow-hidden">
-            
-            {/* Header tab */}
-            <div className="bg-[#F0EFEC] border-b border-[#141414] px-4 py-2 flex items-center justify-between font-mono text-[9.5px] uppercase font-bold text-slate-500">
-              <div className="flex items-center gap-1.5">
-                <Activity className="w-3.5 h-3.5 text-[#141414]" />
-                <span>governance_pipeline.txt</span>
-              </div>
-              <span className="bg-[#141414] text-amber-400 px-1.5 font-black text-[8px]">PROD ENG ARCH</span>
-            </div>
-
-            {/* ASCII diagram block */}
-            <div className="p-4 bg-[#141414] text-slate-300 font-mono text-[9px] md:text-[10px] leading-relaxed overflow-x-auto whitespace-pre select-all">
-{`+---------------------------------------------------------------------------------------------------------+
-|                                    THE 10-STEP GOVERNED LOOP PIPELINE                                   |
-+---------------------------------------------------------------------------------------------------------+
-
-[01. INIT] -----------> [02. BOARD] -----------> [03. PLAN] -------------> [04. APPROVE] --------> [05. RECALL]
-  CLI Installed.          Kanban task            Brief candidate          Human checks             Guidelines
-  Doctor checked.        card analyzed.           is compiled.           brief bounds.           compiled.
-                                                       |                       |
-                                                       |                       | (re-plan invalidates)
-                                                       v                       v
-[10. MEMORY] <--------- [09. LEARN] <---------- [08. CLOSE] <------------ [07. VERIFY] <--------- [06. WORK]
-  Durable proposal        Findings schema        Workflow closed.          Consistency              External agent
-  human-promoted.         validated local.       Report compiled.        contracts verified.         edits code.
-`}
-            </div>
-
-            {/* Explanatory breakdown of the 4 Actors */}
-            <div className="p-5 bg-slate-50 border-t border-[#141414]/15 grid grid-cols-1 md:grid-cols-4 gap-4 text-xs font-sans">
-              <div className="space-y-1">
-                <div className="flex items-center gap-1 font-mono text-[10.5px] font-black text-red-700 uppercase">
-                  <User className="w-3.5 h-3.5" />
-                  <span>1. Human</span>
-                </div>
-                <p className="text-[11px] text-slate-500 leading-normal">
-                  Holds ultimate authority. Selects backlog tasks, approves or invalidates briefs, reviews localized findings, and promotes candidate rules.
-                </p>
-              </div>
-
-              <div className="space-y-1 border-t md:border-t-0 md:border-l border-slate-200 pt-3 md:pt-0 md:pl-4">
-                <div className="flex items-center gap-1 font-mono text-[10.5px] font-black text-indigo-700 uppercase">
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>2. agent-loop</span>
-                </div>
-                <p className="text-[11px] text-slate-500 leading-normal">
-                  The local CLI protocol. Enforces states, records approvals, compiles selective recall, and locks verification gates.
-                </p>
-              </div>
-
-              <div className="space-y-1 border-t md:border-t-0 md:border-l border-slate-200 pt-3 md:pt-0 md:pl-4">
-                <div className="flex items-center gap-1 font-mono text-[10.5px] font-black text-amber-600 uppercase">
-                  <Cpu className="w-3.5 h-3.5" />
-                  <span>3. Coding Agent</span>
-                </div>
-                <p className="text-[11px] text-slate-500 leading-normal">
-                  External actor (e.g. Claude Code, Aider, Cursor). Consumes task-scoped recall and implements clean patches without scope creep.
-                </p>
-              </div>
-
-              <div className="space-y-1 border-t md:border-t-0 md:border-l border-slate-200 pt-3 md:pt-0 md:pl-4">
-                <div className="flex items-center gap-1 font-mono text-[10.5px] font-black text-emerald-700 uppercase">
-                  <FileCheck className="w-3.5 h-3.5" />
-                  <span>4. Project Tools</span>
-                </div>
-                <p className="text-[11px] text-slate-500 leading-normal">
-                  The existing codebase toolchain (PHPUnit, PHPStan, linters). Runs test suites independently; outputs are verified as evidence.
-                </p>
-              </div>
-            </div>
+          <div className="border-2 border-[#141414] bg-[#111827] text-slate-100 p-5 shadow-[6px_6px_0px_0px_rgba(20,20,20,1)] overflow-x-auto">
+            <pre className="font-mono text-xs leading-6 whitespace-pre">{`human/task intent
+  -> agent-loop enter <task-id> --format=json
+  -> obey next_action_kind / next_action
+  -> host-native implementation when authorized
+  -> agent-loop finish <task-id> --format=json
+  -> obey next_action_kind / next_action
+  -> complete`}</pre>
           </div>
-        </div>
-
-        {/* ECOSYSTEM SECTION */}
-        <div className="space-y-6">
-          <div className="space-y-1 text-center">
-            <h2 className="font-mono text-[10px] font-black uppercase tracking-widest text-[#141414]/65">THE COMPOSABLE ECOSYSTEM</h2>
-            <h3 className="text-xl font-black uppercase tracking-tight font-mono">Small, Composable Repositories with Single Responsibilities</h3>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-sans">
-            
-            <div className="border-2 border-[#141414] bg-white p-4.5 space-y-2 relative shadow-[3px_3px_0px_0px_rgba(20,20,20,1)]">
-              <span className="absolute top-3 right-3 text-[9px] font-mono font-bold text-slate-400">CORE</span>
-              <div className="font-mono text-[11px] font-black text-indigo-700 flex items-center gap-1">
-                <Layers className="w-4 h-4" />
-                <span>voku/agent-loop</span>
-              </div>
-              <p className="text-slate-600 leading-normal">
-                Workflow orchestration CLI. Enforces progression state-transitions, validates evidence caches, and logs approvals.
-              </p>
-            </div>
-
-            <div className="border-2 border-[#141414] bg-white p-4.5 space-y-2 relative shadow-[3px_3px_0px_0px_rgba(20,20,20,1)]">
-              <span className="absolute top-3 right-3 text-[9px] font-mono font-bold text-slate-400">STATE</span>
-              <div className="font-mono text-[11px] font-black text-amber-600 flex items-center gap-1">
-                <FileText className="w-4 h-4" />
-                <span>voku/agent-kanban</span>
-              </div>
-              <p className="text-slate-600 leading-normal">
-                A simple local flat-file markdown backlog tool. Controls developer ticket states, priority matrices, and story branches.
-              </p>
-            </div>
-
-            <div className="border-2 border-[#141414] bg-white p-4.5 space-y-2 relative shadow-[3px_3px_0px_0px_rgba(20,20,20,1)]">
-              <span className="absolute top-3 right-3 text-[9px] font-mono font-bold text-slate-400">SANDBOX</span>
-              <div className="font-mono text-[11px] font-black text-emerald-700 flex items-center gap-1">
-                <TermIcon className="w-4 h-4" />
-                <span>voku/agent-session</span>
-              </div>
-              <p className="text-slate-600 leading-normal">
-                Temporary working memory directories. Spawns isolated session checkouts, staging area logs, and handles clean git-diff outputs.
-              </p>
-            </div>
-
-            <div className="border-2 border-[#141414] bg-white p-4.5 space-y-2 relative shadow-[3px_3px_0px_0px_rgba(20,20,20,1)]">
-              <span className="absolute top-3 right-3 text-[9px] font-mono font-bold text-slate-400">KNOWLEDGE</span>
-              <div className="font-mono text-[11px] font-black text-purple-700 flex items-center gap-1">
-                <Brain className="w-4 h-4" />
-                <span>voku/agent-learning</span>
-              </div>
-              <p className="text-slate-600 leading-normal">
-                Durable repository constraints. Governs finding validations, stores outcome metrics, and registers candidate guidelines.
-              </p>
-            </div>
-
-            <div className="border-2 border-[#141414] bg-white p-4.5 space-y-2 relative shadow-[3px_3px_0px_0px_rgba(20,20,20,1)]">
-              <span className="absolute top-3 right-3 text-[9px] font-mono font-bold text-slate-400">COMPILER</span>
-              <div className="font-mono text-[11px] font-black text-rose-700 flex items-center gap-1">
-                <Map className="w-4 h-4" />
-                <span>voku/agent-recall-compiler</span>
-              </div>
-              <p className="text-slate-600 leading-normal">
-                Task-scoped selector compiler. Pulls active context guidelines relevant to modified symbol namespaces and skips irrelevant clutter.
-              </p>
-            </div>
-
-            <div className="border-2 border-[#141414] bg-white p-4.5 space-y-2 relative shadow-[3px_3px_0px_0px_rgba(20,20,20,1)]">
-              <span className="absolute top-3 right-3 text-[9px] font-mono font-bold text-slate-400">AST INTEL</span>
-              <div className="font-mono text-[11px] font-black text-teal-700 flex items-center gap-1">
-                <Maximize2 className="w-4 h-4" />
-                <span>voku/agent-map</span>
-              </div>
-              <p className="text-slate-600 leading-normal">
-                Codebase symbol cataloguer. Scans php files into compact tokens lists detailing inheritance, signatures, and imports.
-              </p>
-            </div>
-
-          </div>
-        </div>
-
-        {/* DOGFOODING TIMELINE */}
-        <div className="space-y-6">
-          <div className="space-y-1 text-center">
-            <h2 className="font-mono text-[10px] font-black uppercase tracking-widest text-[#141414]/65">DOGFOODED GOVERNANCE</h2>
-            <h3 className="text-xl font-black uppercase tracking-tight font-mono">We used Agent Loop to improve Agent Loop itself</h3>
-          </div>
-          <div className="border-2 border-[#141414] bg-[#F0EFEC] p-5 shadow-[6px_6px_0px_0px_rgba(20,20,20,1)]">
-            <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
-              {dogfoodSteps.map((step, idx) => (
-                <div key={step} className="bg-white border-2 border-[#141414] p-3 text-center relative min-h-24 flex items-center justify-center">
-                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-[#141414] text-amber-300 font-mono text-[8px] font-black px-2 py-0.5">
-                    {idx + 1}
-                  </div>
-                  <span className="font-mono text-[10px] font-black uppercase leading-tight">{step}</span>
-                  {idx < dogfoodSteps.length - 1 && (
-                    <ArrowRight className="hidden md:block absolute -right-4 top-1/2 -translate-y-1/2 w-5 h-5 bg-amber-400 border border-[#141414] rounded-full p-0.5 text-[#141414] z-10" />
-                  )}
-                </div>
-              ))}
-            </div>
-            <p className="text-xs text-slate-700 leading-relaxed mt-4 text-center max-w-2xl mx-auto">
-              The credibility claim is not “trust our framework.” It is: every workflow improvement can travel through the same evidence, review, and release path that the tool asks your code changes to follow.
-            </p>
-          </div>
-        </div>
-
-        {/* IMPLEMENTATION REASONING (PHP 8.3 ADVANTAGE) */}
-        <div className="space-y-6">
-          <div className="space-y-1 text-center">
-            <h2 className="font-mono text-[10px] font-black uppercase tracking-widest text-[#141414]/65">INTERPRETED SYSTEM ADVANTAGE</h2>
-            <h3 className="text-xl font-black uppercase tracking-tight font-mono">Built in PHP for a reason</h3>
-          </div>
-
-          <div className="border-2 border-[#141414] bg-white p-6 space-y-4 shadow-[4px_4px_0px_0px_rgba(20,20,20,1)] font-sans text-xs text-slate-700 leading-relaxed">
-            <p>
-              Choosing PHP 8.3 is a deliberate, practical engineering choice: the workflow is easy to inspect, easy to modify, and fast to run inside ordinary repositories.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 font-mono text-[11px] font-black uppercase text-[#141414]">
-              <div className="border border-[#141414]/20 bg-[#F9F8F6] p-2">• Easy to inspect</div>
-              <div className="border border-[#141414]/20 bg-[#F9F8F6] p-2">• Easy to modify</div>
-              <div className="border border-[#141414]/20 bg-[#F9F8F6] p-2">• Immediate feedback</div>
-              <div className="border border-[#141414]/20 bg-[#F9F8F6] p-2">• Agents can improve the workflow itself</div>
-            </div>
-            
-            <p className="font-medium text-[#141414]">
-              How this works in practice:
-            </p>
-
-            <blockquote className="border-l-4 border-[#141414] pl-3 py-1 bg-[#F9F8F6] font-mono text-[11.5px] text-slate-800 leading-normal">
-              If a workflow command or code check is missing, incomplete, or fails to catch a class of bugs, the coding agent can modify the PHP implementation of agent-loop itself, execute the corrected command in the same session, and submit the tooling improvement as a standard pull request downstream.
-            </blockquote>
-
-            <p>
-              This fast-feedback recursive developer loop turns the workflow tooling into a natural extension of the repository. It completely side-steps heavy, multi-layered cloud stacks or closed-source frameworks.
-            </p>
-          </div>
-        </div>
-
-        {/* PRACTICAL CLI REFERENCE (INTERACTIVE COMPONENT) */}
-        <div className="space-y-6">
-          <div className="space-y-1 text-center">
-            <h2 className="font-mono text-[10px] font-black uppercase tracking-widest text-[#141414]/65">CLI PLAYBOOK MANUAL</h2>
-            <h3 className="text-xl font-black uppercase tracking-tight font-mono">Command Specifications & Boundaries</h3>
-          </div>
-
-          <div className="border-2 border-[#141414] bg-white shadow-[6px_6px_0px_0px_rgba(20,20,20,1)] overflow-hidden">
-            
-            {/* Tab switchers */}
-            <div className="bg-[#F0EFEC] border-b-2 border-[#141414] flex flex-wrap divide-x divide-[#141414] font-mono text-[9px] uppercase tracking-wider font-bold select-none text-slate-500">
-              {Object.keys(cliCommands).map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setSelectedCliTab(tab)}
-                  className={`flex-1 py-2.5 px-2 text-center transition duration-150 hover:bg-[#DAD9D6] cursor-pointer ${selectedCliTab === tab ? "bg-[#141414] text-[#E4E3E0] font-black" : ""}`}
-                >
-                  {tab}
-                </button>
-              ))}
-            </div>
-
-            {/* Tab content area */}
-            <div className="p-5 space-y-4">
-              <div className="flex items-center justify-between border-b pb-2">
-                <span className="font-mono text-xs font-bold text-slate-800 uppercase tracking-tight">Active Command:</span>
-                <span className="bg-amber-100 text-amber-900 border border-amber-300 font-mono text-[9px] font-bold px-1.5 py-0.2">GOVERNED PROTOCOL</span>
-              </div>
-
-              {/* Console display block */}
-              <div className="bg-[#141414] text-[#E4E3E0] p-4.5 font-mono text-xs border border-[#141414] select-all shadow-inner leading-relaxed">
-                <div className="text-slate-500"># Syntax</div>
-                <div className="text-amber-300 font-bold">$ {cliCommands[selectedCliTab as keyof typeof cliCommands].cmd}</div>
-                <div className="text-slate-500 mt-2"># Context Outcome</div>
-                <div className="text-slate-200">{cliCommands[selectedCliTab as keyof typeof cliCommands].description}</div>
-              </div>
-
-              {/* Functional details grids */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-sans text-xs">
-                
-                <div className="space-y-3.5">
-                  <div className="p-3 bg-emerald-50 border border-emerald-200 space-y-1">
-                    <div className="font-mono text-[9.5px] font-black uppercase text-emerald-800 flex items-center gap-1">
-                      <CheckCircle className="w-3.5 h-3.5" />
-                      <span>What it DOES</span>
-                    </div>
-                    <p className="text-[11px] text-slate-700 leading-normal font-medium">
-                      {cliCommands[selectedCliTab as keyof typeof cliCommands].does}
-                    </p>
-                  </div>
-
-                  <div className="p-3 bg-red-50 border border-red-200 space-y-1">
-                    <div className="font-mono text-[9.5px] font-black uppercase text-red-800 flex items-center gap-1">
-                      <AlertTriangle className="w-3.5 h-3.5 text-red-700" />
-                      <span>What it does NOT do</span>
-                    </div>
-                    <p className="text-[11px] text-slate-700 leading-normal font-medium">
-                      {cliCommands[selectedCliTab as keyof typeof cliCommands].doesNot}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="border border-[#141414]/15 bg-slate-50 p-3.5 font-mono text-[10.5px] space-y-2 leading-relaxed flex flex-col justify-center">
-                  <div>
-                    <span className="text-slate-400 block text-[9px] uppercase font-black tracking-wider">Input Target Artifacts:</span>
-                    <span className="text-slate-700 block font-bold mt-0.5 font-sans text-xs">
-                      {cliCommands[selectedCliTab as keyof typeof cliCommands].input}
-                    </span>
-                  </div>
-                  <div className="border-t pt-2 mt-1">
-                    <span className="text-slate-400 block text-[9px] uppercase font-black tracking-wider">Resulting Evidence Output:</span>
-                    <span className="text-slate-800 block font-bold mt-0.5 font-sans text-xs">
-                      {cliCommands[selectedCliTab as keyof typeof cliCommands].output}
-                    </span>
-                  </div>
-                </div>
-
-              </div>
-
-            </div>
-          </div>
-        </div>
-
-        {/* ENGINEERING PRINCIPLES */}
-        <div className="space-y-6">
-          <div className="space-y-1 text-center">
-            <h2 className="font-mono text-[10px] font-black uppercase tracking-widest text-[#141414]/65">THE GOVERNED DOCTRINES</h2>
-            <h3 className="text-xl font-black uppercase tracking-tight font-mono">Durable Engineering Principles</h3>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 font-sans text-xs">
-            
-            <div className="border-2 border-[#141414] bg-white p-5 space-y-2 shadow-[3px_3px_0px_0px_rgba(20,20,20,1)]">
-              <div className="font-mono text-[10px] font-black text-indigo-700 uppercase tracking-wider">01 / CONTRACT COHERENCE</div>
-              <h4 className="font-mono text-sm font-black text-[#141414] uppercase tracking-tight">Scope Enforces Safety</h4>
-              <p className="text-slate-600 leading-normal">
-                An agent is prohibited from scanning files or applying patches beyond the boundaries declared in the approved brief. If the boundary is breached, the verification gate halts immediately.
-              </p>
-            </div>
-
-            <div className="border-2 border-[#141414] bg-white p-5 space-y-2 shadow-[3px_3px_0px_0px_rgba(20,20,20,1)]">
-              <div className="font-mono text-[10px] font-black text-amber-600 uppercase tracking-wider">02 / VERSIONED CONSENT</div>
-              <h4 className="font-mono text-sm font-black text-[#141414] uppercase tracking-tight">Re-planning Invalidates Approval</h4>
-              <p className="text-slate-600 leading-normal">
-                If the task shifts, previous human authorization is immediately voided. The tool blocks progress until a new candidate plan is drafted, reviewed, and signed off.
-              </p>
-            </div>
-
-            <div className="border-2 border-[#141414] bg-white p-5 space-y-2 shadow-[3px_3px_0px_0px_rgba(20,20,20,1)]">
-              <div className="font-mono text-[10px] font-black text-emerald-700 uppercase tracking-wider">03 / SELECTIVE COMPRESSED RECALL</div>
-              <h4 className="font-mono text-sm font-black text-[#141414] uppercase tracking-tight">Curation Over Volume</h4>
-              <p className="text-slate-600 leading-normal">
-                Instead of dumping every historical rule, agent-loop compiles localized recall specifically matching active classes. Unused assumption caches are discarded.
-              </p>
-            </div>
-
-          </div>
-        </div>
-
-        {/* TECHNICAL FAQ SECTION */}
-        <div className="space-y-6">
-          <div className="space-y-1 text-center">
-            <h2 className="font-mono text-[10px] font-black uppercase tracking-widest text-[#141414]/65">TECHNICAL ENQUIRIES</h2>
-            <h3 className="text-xl font-black uppercase tracking-tight font-mono">Frequently Answered Queries</h3>
-          </div>
-
-          <div className="border-2 border-[#141414] bg-white divide-y-2 divide-[#141414] shadow-[6px_6px_0px_0px_rgba(20,20,20,1)]">
-            {faqItems.map((item, idx) => (
-              <div key={idx} className="p-4.5 font-sans text-xs">
-                <button
-                  onClick={() => setExpandedFaq(expandedFaq === idx ? null : idx)}
-                  className="w-full flex items-center justify-between text-left font-mono font-bold text-slate-900 cursor-pointer select-none py-1 group"
-                >
-                  <span className="group-hover:text-indigo-700 transition-colors text-xs flex items-start gap-2 pr-4 leading-relaxed">
-                    <HelpCircle className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-                    <span>{item.q}</span>
-                  </span>
-                  <span className="text-lg font-bold text-[#141414] shrink-0">
-                    {expandedFaq === idx ? "−" : "+"}
-                  </span>
-                </button>
-                
-                {expandedFaq === idx && (
-                  <p className="mt-3.5 pl-6 text-slate-600 leading-relaxed max-w-3xl animate-fade-in text-[11.5px]">
-                    {item.a}
-                  </p>
-                )}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {workflowSteps.map((step, index) => (
+              <div key={step.label} className="border-2 border-[#141414] bg-white p-4 shadow-[3px_3px_0px_0px_rgba(20,20,20,1)]">
+                <div className="font-mono text-[10px] font-black text-slate-500">{String(index + 1).padStart(2, "0")}</div>
+                <h4 className="font-mono font-black uppercase mt-1">{step.label}</h4>
+                <p className="text-xs text-slate-600 leading-relaxed mt-2">{step.text}</p>
               </div>
             ))}
           </div>
-        </div>
-
-        {/* THE FINAL CALL TO ACTION (CTA) */}
-        <div className="border-2 border-[#141414] bg-[#F0EFEC] p-8 text-center space-y-6 shadow-[8px_8px_0px_0px_rgba(20,20,20,1)] relative select-none">
-          <div className="absolute top-4 right-4 bg-white border border-[#141414]/15 px-2 py-0.5 font-mono text-[8px] font-black text-slate-500 uppercase tracking-wider">
-            GOVERNANCE PROTOCOL
+          <div className="bg-amber-100 border-2 border-[#141414] p-4 text-sm leading-relaxed">
+            <strong>Important:</strong> map, session, recall, review, learn, edit, and verify are still real commands. They are specialist, diagnostic, CI, or recovery surfaces, not a mandatory phase list that every host must memorize.
           </div>
+        </section>
 
-          <div className="space-y-2 max-w-2xl mx-auto">
-            <h3 className="text-2xl font-black uppercase font-mono tracking-tight text-[#141414]">
-              Exit the Context Landfill.
-            </h3>
-            <p className="text-xs text-slate-600 font-sans max-w-md mx-auto leading-normal">
-              Restore engineering credibility, clear scopes, explicit hand-offs, and versioned verification gates to your coding workspace today.
-            </p>
+        <section className="space-y-5">
+          <div>
+            <h2 className="font-mono text-[10px] font-black uppercase tracking-widest text-[#141414]/65">STRUCTURED ROUTING</h2>
+            <h3 className="text-2xl font-black uppercase tracking-tight font-mono mt-1">The host is told what kind of next action it received.</h3>
           </div>
-
-          <div className="flex flex-col sm:flex-row justify-center items-center gap-4 pt-2">
-            <button
-              onClick={onLaunchSandbox}
-              className="w-full sm:w-auto px-6 py-3.5 bg-[#141414] hover:bg-slate-800 text-white font-black font-mono text-xs uppercase tracking-widest border-2 border-[#141414] shadow-[4px_4px_0px_0px_rgba(251,191,36,1)] hover:translate-x-[1px] hover:translate-y-[-1px] transition-all cursor-pointer"
-            >
-              Launch Interactive Sandbox
-            </button>
-            <a
-              href="https://github.com/voku/agent-loop"
-              target="_blank"
-              rel="noreferrer"
-              className="w-full sm:w-auto px-6 py-3.5 bg-white hover:bg-[#F0EFEC] text-[#141414] font-black font-mono text-xs uppercase tracking-widest border-2 border-[#141414] shadow-[4px_4px_0px_0px_rgba(20,20,20,0.15)] flex items-center justify-center gap-2 hover:translate-x-[1px] hover:translate-y-[-1px] transition-all"
-            >
-              <GitPullRequest className="w-4 h-4 text-slate-500" />
-              <span>Explore on GitHub</span>
-            </a>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {nextActionKinds.map(([kind, description]) => (
+              <div key={kind} className="border border-[#141414] bg-[#F0EFEC] p-4 flex gap-3 items-start">
+                <code className="font-mono text-[11px] font-black bg-[#141414] text-white px-2 py-1 shrink-0">{kind}</code>
+                <p className="text-sm text-slate-700 leading-relaxed">{description}</p>
+              </div>
+            ))}
           </div>
-        </div>
+          <p className="text-sm text-slate-700 leading-relaxed">
+            The lifecycle result also exposes <code className="font-mono font-bold">mutation_ready</code> and owner-backed <code className="font-mono font-bold">manifest.references</code>. The host routes that authority; it does not reconstruct it from storage paths or copied documentation.
+          </p>
+        </section>
 
-      </div>
+        <section className="space-y-6">
+          <div>
+            <h2 className="font-mono text-[10px] font-black uppercase tracking-widest text-[#141414]/65">THE COMPOSABLE ECOSYSTEM</h2>
+            <h3 className="text-2xl font-black uppercase tracking-tight font-mono mt-1">Focused packages, explicit owners.</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {packages.map(([badge, name, role, text]) => (
+              <article key={name} className="border-2 border-[#141414] bg-white p-5 shadow-[4px_4px_0px_0px_rgba(20,20,20,1)]">
+                <div className="flex items-center justify-between gap-2 mb-3"><span className="font-mono text-[9px] font-black bg-amber-300 border border-[#141414] px-2 py-0.5">{badge}</span><PackageCheck className="w-4 h-4" /></div>
+                <h4 className="font-mono font-black text-sm">{name}</h4>
+                <div className="font-mono text-[10px] uppercase tracking-wider text-slate-500 mt-1">{role}</div>
+                <p className="text-xs text-slate-700 leading-relaxed mt-3">{text}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="border-2 border-[#141414] bg-white shadow-[6px_6px_0px_0px_rgba(20,20,20,1)] overflow-hidden">
+          <div className="px-5 py-4 border-b-2 border-[#141414] bg-[#F0EFEC] flex items-center justify-between gap-4">
+            <div>
+              <h2 className="font-mono text-[10px] font-black uppercase tracking-widest text-[#141414]/65">CLI PLAYBOOK</h2>
+              <h3 className="font-mono text-lg font-black uppercase">Front doors first, specialist commands second.</h3>
+            </div>
+            <TermIcon className="w-5 h-5" />
+          </div>
+          <div className="flex flex-wrap border-b border-[#141414] bg-slate-100">
+            {(Object.keys(cliCommands) as Array<keyof typeof cliCommands>).map((key) => (
+              <button key={key} onClick={() => setSelectedCliTab(key)} className={`px-4 py-3 font-mono text-[10px] font-black uppercase border-r border-[#141414] cursor-pointer ${selectedCliTab === key ? "bg-[#141414] text-white" : "hover:bg-white"}`}>{key}</button>
+            ))}
+          </div>
+          <div className="p-5 space-y-4">
+            <div className="bg-[#111827] text-slate-100 border-2 border-[#141414] p-4 overflow-x-auto"><code className="font-mono text-xs whitespace-pre">$ {selectedCommand.cmd}</code></div>
+            <p className="text-sm text-slate-700 leading-relaxed">{selectedCommand.description}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="border border-emerald-700 bg-emerald-50 p-4"><div className="font-mono text-[10px] font-black uppercase text-emerald-800 mb-2">What it does</div><p className="text-xs text-slate-700 leading-relaxed">{selectedCommand.does}</p></div>
+              <div className="border border-rose-700 bg-rose-50 p-4"><div className="font-mono text-[10px] font-black uppercase text-rose-800 mb-2">What it does not do</div><p className="text-xs text-slate-700 leading-relaxed">{selectedCommand.doesNot}</p></div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 font-mono text-[10px]"><div className="bg-slate-100 p-3 border border-slate-300"><strong>INPUT:</strong> {selectedCommand.input}</div><div className="bg-slate-100 p-3 border border-slate-300"><strong>OUTPUT:</strong> {selectedCommand.output}</div></div>
+          </div>
+        </section>
+
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="border-2 border-[#141414] bg-white p-5"><ShieldCheck className="w-5 h-5 mb-3" /><div className="font-mono text-[10px] font-black text-slate-500">01 / OWNER AUTHORITY</div><h3 className="font-mono font-black uppercase mt-1">One semantic owner per decision</h3><p className="text-xs text-slate-700 leading-relaxed mt-3">Loop coordinates cross-package policy while Kanban, Session, Map, Recall, and Learning keep their own state and semantics.</p></div>
+          <div className="border-2 border-[#141414] bg-white p-5"><GitBranch className="w-5 h-5 mb-3" /><div className="font-mono text-[10px] font-black text-slate-500">02 / VERSIONED CONSENT</div><h3 className="font-mono font-black uppercase mt-1">Approval binds one Contract revision</h3><p className="text-xs text-slate-700 leading-relaxed mt-3">Changed authority means a new decision. Ordinary discovery and implementation inside the approved boundary do not need ceremonial re-approval.</p></div>
+          <div className="border-2 border-[#141414] bg-white p-5"><Search className="w-5 h-5 mb-3" /><div className="font-mono text-[10px] font-black text-slate-500">03 / BOUNDED CONTEXT</div><h3 className="font-mono font-black uppercase mt-1">Curation over context landfill</h3><p className="text-xs text-slate-700 leading-relaxed mt-3">Map and Recall provide targeted source/navigation facts and task-scoped guidance instead of treating every old note as equally authoritative.</p></div>
+        </section>
+
+        <section className="border-2 border-[#141414] bg-[#141414] text-white p-6 md:p-8 shadow-[6px_6px_0px_0px_rgba(251,191,36,1)]">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_1.2fr] gap-8 items-center">
+            <div>
+              <div className="font-mono text-[10px] font-black uppercase tracking-widest text-amber-300">DOGFOODED GOVERNANCE</div>
+              <h3 className="font-mono text-2xl font-black uppercase mt-2">The workflow is used to change the workflow.</h3>
+            </div>
+            <div className="space-y-3 text-sm text-slate-300 leading-relaxed">
+              <p>agent-loop is developed through the same evidence, review, ownership, release, and installed-consumer paths it asks downstream repositories to use.</p>
+              <p>The useful credibility claim is not “trust the framework.” It is that lifecycle defects, owner-boundary mistakes, and false dependency floors can be turned into reproducible tests and package-owned fixes.</p>
+            </div>
+          </div>
+        </section>
+
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="border-2 border-[#141414] bg-white p-6 space-y-4">
+            <div className="flex items-center gap-3"><Wrench className="w-5 h-5" /><h3 className="font-mono font-black uppercase">Built in PHP for inspectability</h3></div>
+            <p className="text-sm text-slate-700 leading-relaxed">The CLI is Composer-native and runs on PHP 8.3+. Its workflow code can be inspected, tested, statically analyzed, and improved from the same repositories it governs instead of hiding policy in a remote orchestration service.</p>
+          </div>
+          <div className="border-2 border-[#141414] bg-white p-6 space-y-4">
+            <div className="flex items-center gap-3"><Layers className="w-5 h-5" /><h3 className="font-mono font-black uppercase">Portable host support</h3></div>
+            <p className="text-sm text-slate-700 leading-relaxed">Package-owned instructions, skills, and agent-role assets can target Codex, Claude Code, OpenCode, Copilot, Gemini CLI, and Antigravity. Host-specific policy projection is capability-dependent rather than falsely claimed universal.</p>
+          </div>
+        </section>
+
+        <section className="space-y-4">
+          <div><h2 className="font-mono text-[10px] font-black uppercase tracking-widest text-[#141414]/65">TECHNICAL ENQUIRIES</h2><h3 className="text-2xl font-black uppercase tracking-tight font-mono mt-1">Frequently answered queries</h3></div>
+          <div className="border-2 border-[#141414] divide-y-2 divide-[#141414] bg-white">
+            {faqItems.map((item, index) => (
+              <div key={item.q}>
+                <button onClick={() => setExpandedFaq(expandedFaq === index ? null : index)} className="w-full flex items-center justify-between gap-4 p-4 text-left cursor-pointer hover:bg-[#F0EFEC]">
+                  <span className="font-mono text-sm font-black">{item.q}</span>
+                  <span className="font-mono font-black">{expandedFaq === index ? "−" : "+"}</span>
+                </button>
+                {expandedFaq === index && <div className="px-4 pb-4 text-sm text-slate-700 leading-relaxed bg-[#F0EFEC]">{item.a}</div>}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="text-center border-2 border-[#141414] bg-amber-300 p-8 shadow-[6px_6px_0px_0px_rgba(20,20,20,1)] space-y-4">
+          <div className="flex justify-center gap-3"><User className="w-5 h-5" /><Brain className="w-5 h-5" /><FileCheck className="w-5 h-5" /><Map className="w-5 h-5" /><Activity className="w-5 h-5" /></div>
+          <h3 className="font-mono text-2xl font-black uppercase">Make the hand-offs explicit.</h3>
+          <p className="text-sm max-w-2xl mx-auto">Start with the local CLI, let <code className="font-mono font-bold">enter</code> tell the host what is actually next, and keep human authority where it matters instead of spreading it across prose.</p>
+          <div className="flex flex-col sm:flex-row justify-center gap-3 pt-2">
+            <button onClick={onLaunchSandbox} className="px-5 py-3 bg-[#141414] text-white border-2 border-[#141414] font-mono text-xs font-black uppercase cursor-pointer flex items-center justify-center gap-2"><TermIcon className="w-4 h-4" />Open lifecycle sandbox</button>
+            <a href="https://github.com/voku/agent-loop" target="_blank" rel="noreferrer" className="px-5 py-3 bg-white text-[#141414] border-2 border-[#141414] font-mono text-xs font-black uppercase flex items-center justify-center gap-2"><GitPullRequest className="w-4 h-4" />GitHub repository</a>
+          </div>
+        </section>
+      </main>
     </div>
   );
 }
