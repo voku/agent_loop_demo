@@ -1,98 +1,239 @@
-# agent-loop Landing Page
+# Agent Loop (`voku/agent-loop`)
 
-Production-ready Vite + React landing page for **agent-loop**, a local governance protocol for AI coding workflows. The app presents the CLI workflow, interactive sandbox, and documentation for scope locking, evidence verification, and selective context management.
+[![Build Status](https://github.com/voku/agent-loop/actions/workflows/ci.yml/badge.svg)](https://github.com/voku/agent-loop/actions)
+[![Latest Stable Version](https://poser.pugx.org/voku/agent-loop/v/stable)](https://packagist.org/packages/voku/agent-loop)
+[![Total Downloads](https://poser.pugx.org/voku/agent-loop/downloads)](https://packagist.org/packages/voku/agent-loop)
+[![Monthly Downloads](https://poser.pugx.org/voku/agent-loop/d/monthly)](https://packagist.org/packages/voku/agent-loop)
+[![License](https://poser.pugx.org/voku/agent-loop/license)](https://packagist.org/packages/voku/agent-loop)
 
-## What this app includes
+**Keep coding-agent work moving without losing the task, guessing what comes next, or calling something done without evidence.**
 
-- A responsive neo-brutalist landing page for the agent-loop project.
-- An interactive browser sandbox that demonstrates the governed CLI workflow.
-- Static SEO metadata, social sharing tags, and a favicon for deploy previews and production hosting.
-- A GitHub Pages deployment workflow that builds the Vite app and publishes the generated `dist/` directory.
+`agent-loop` is a local-first PHP workflow kernel for coding agents. It gives agents and developers a shared, checkable way to run tasks: what to do, what may be touched, what evidence proves it, and how lessons learned from one task improve future tasks.
 
-## Requirements
+---
 
-- Node.js LTS+
-- npm+
+## The Core Philosophy: Why a Governed Workflow?
 
-## Local development
+### 1. Workflow Tokens Buy Handover Resilience
+Running a governed workflow uses slightly more tokens upfront than throwing raw prompts into a chat. In return, **the task survives the chat**.
+* If an agent context window runs out, the model hallucinates, or the session dies, the work is never lost.
+* You can **hand over the task** seamlessly: start in Claude Code, hand off to OpenAI Codex, have GitHub Copilot inspect it, or let a human engineer pick up exactly where the agent stopped.
+* The state, approved scope boundary, and validation evidence live as versioned artifacts in your Git repository—not inside volatile LLM conversational memory.
+
+### 2. Multi-Agent Collaboration on Kanban Tasks
+Different coding agents can work on the **same project at the same time on different Kanban tasks**.
+* `agent-kanban` stores task items as Git-native Markdown files (`docs/kanban/*.md`) with deterministic revision hashes.
+* Agent A can tackle a refactoring card while Agent B works on a bugfix card.
+* Because boundaries and scope whitelists are enforced per task, agents do not step on each other's toes or pollute each other's context.
+
+### 3. Findings → Learnings: Project Intelligence That Compounds
+After every task run, review observations and lint diagnostics become structured **findings**.
+* Repeated findings synthesize into corroborated **proposals**.
+* An engineering owner approves them into **durable decisions**.
+* Each run makes the development process better and more tailored for the specific project.
+
+### 4. Deterministic Checks Reduce Tokens Over Time
+When a project learning is approved, we don't dump another 500 words into a bloated system prompt or `MEMORY.md` landfill. Instead, we codify it into a **deterministic check**:
+* A custom PHPStan rule
+* A `php-cs-fixer` configuration
+* A targeted unit/regression test
+* A Git pre-commit or CI check
+
+**Deterministic checks cost 0 LLM prompt tokens.** Over time, system prompts shrink, models receive sharper and smaller context, and the token cost per task decreases while repository quality increases deterministically.
+
+---
+
+## How It Works
+
+Most coding-agent setups fail in one of two ways:
+1. They stuff rules into giant prose prompts and hope the model remembers them.
+2. They let the model mark its own homework ("*I ran the tests and everything is green!*").
+
+`agent-loop` replaces both with two simple commands that run inside your project:
+
+```bash
+vendor/bin/agent-loop enter <task-id>
+vendor/bin/agent-loop finish <task-id>
+```
+
+```text
+You have work to do
+       │
+       ▼
+┌──────────────┐
+│  Agent Loop  │ ◄─── task, rules, boundaries, and evidence live here
+└──────┬───────┘
+       │  enter: here is the task, the scope, and the exact next step
+       ▼
+┌──────────────┐
+│ Coding agent │ ◄─── works only inside the approved boundary
+└──────┬───────┘
+       │  finish: prove the work with tests and git status
+       ▼
+┌──────────────┐      not done yet
+│  Agent Loop  │ ──────────────────────► tells the agent what to fix
+└──────┬───────┘
+       │  done
+       ▼
+Keep useful lessons ──► deterministic checks ──► faster, cheaper future runs
+```
+
+---
+
+## Without It vs. With Agent Loop
+
+| Without Agent Loop | With Agent Loop |
+| :--- | :--- |
+| **Lost context:** Close the chat window and the task state disappears. | **Durable tasks:** Tasks live in Git-backed Markdown (`agent-kanban`). Close the window, pick it up tomorrow, or hand off to another agent. |
+| **Context landfill:** Every rule, lesson, and historical quirk gets dumped into one massive prompt. | **Bounded context:** `agent-recall-compiler` extracts only the code symbols and approved rules needed for this specific task. |
+| **Self-certified completion:** The agent says "All tests pass!" and you have to take its word for it. | **Owner-backed evidence:** `agent-session` captures test output, exit codes, and Git working-tree status. No proof = not done. |
+| **Runaway edits:** The agent decides to "clean up" five unrelated files while fixing a typo. | **Contract boundaries:** Edits are restricted to an approved file whitelist. Unauthorized file touches fail closed. |
+| **Ephemeral mistakes:** The agent makes the same mistake next week in a fresh session. | **Compounding learnings:** Findings promote to approved rules, which turn into deterministic CI checks that reduce token usage over time. |
+| **Single-agent bottleneck:** Only one conversation can touch the codebase safely. | **Multi-agent concurrency:** Multiple agents work concurrently on different Kanban cards without cross-session pollution. |
+
+---
+
+## What Makes It Different
+
+1. **The task survives the chat.** Chat sessions are temporary; tasks are not. `agent-loop` keeps the task, its scope, and its progress in the repository so any agent (or human) can pick it up.
+2. **Multi-agent Kanban concurrency.** Different agents can work on the same project simultaneously, each assigned to a separate card on the Git-native board.
+3. **The agent gets less context, but better context.** Instead of feeding the model the whole repository or an endless memory log, `agent-map` and `agent-recall-compiler` select only the symbols and rules relevant to the task at hand.
+4. **Evidence beats confidence.** A model saying "done" is not evidence. `agent-loop` checks recorded command runs, exit codes, and git diffs before allowing a task to finish.
+5. **Useful experience improves later work.** Real findings from past tasks can be promoted to durable rules. The next time an agent touches related code, it gets the benefit of that experience automatically.
+6. **Deterministic checks reduce tokens over time.** Approved learnings are translated into PHPStan rules, linters, and tests. Mechanical checks run for free, keeping prompt tokens low and quality reproducible.
+7. **Engineering judgment stays engineering judgment.** Humans approve contracts, scope expansions, policy waivers, and durable rules. The kernel enforces the boundaries; the agent does the coding; you remain in control.
+
+---
+
+## What Agent Loop Does NOT Do
+
+To maintain architectural integrity, `agent-loop` explicitly avoids doing things that belong elsewhere:
+
+* **It does not call LLM APIs by itself.** Your coding host (Claude Code, Cursor, Copilot, Codex, etc.) handles model calls. `agent-loop` provides the workflow harness and guardrails.
+* **It does not auto-commit or push without approval.** Git commits and pushes remain under human control or explicit host delegation.
+* **It does not invent human approval.** Scope changes, policy waivers, and durable guidance promotions require an explicit human decision.
+* **It does not replace project-native tools.** It does not reinvent PHPUnit, Pest, PHPStan, or PHP-CS-Fixer; it invokes them and checks their exit codes and evidence.
+* **It does not create a prompt landfill.** It rejects the `MEMORY.md` pattern where unverified notes pile up unchecked.
+* **It is not vendor-locked.** It projects instructions and assets for Codex, Claude Code, OpenCode, Copilot, Gemini CLI, and Antigravity.
+
+---
+
+## CLI Overview
+
+### The Two Canonical Front Doors
+
+For 90% of your daily workflow, you or your agent only need these two commands:
+
+```bash
+# 1. Enter the task: returns the current state and canonical next action
+vendor/bin/agent-loop enter <task-id> --format=json
+
+# 2. Finish the task: reconciles test evidence, git status, and quality gates
+vendor/bin/agent-loop finish <task-id> --format=json
+```
+
+### Specialist Front Doors & Diagnostic Commands
+
+When specialized or recovery workflows are needed:
+
+| Command | Purpose |
+| :--- | :--- |
+| `vendor/bin/agent-loop quick --file <path> "<intent>"` | Low-ceremony fast path for surgical 1–2 file changes (diff ceiling <= 60 lines). |
+| `vendor/bin/agent-loop repair <task-id>` | Targeted recovery after an observed test failure with a strict 2-attempt budget. |
+| `vendor/bin/agent-loop pipeline <task-id> --stage=<stage>` | Multi-stage execution runner (surgical, standard, hardened). |
+| `vendor/bin/agent-loop workflow manifest <task-id>` | Read-only unified JSON projection connecting all owner artifacts. |
+| `vendor/bin/agent-loop workflow plan <task-id> --file <f> ...` | Proposes a candidate Contract with mutation scope and validation plan. |
+| `vendor/bin/agent-loop workflow approve <task-id> --by <user>` | Human seal approving the Contract revision and mutation boundary. |
+| `vendor/bin/agent-loop edit '<Symbol>' -- '<intent>'` | Specialist symbol-scoped edit bundle using structural code intelligence. |
+| `vendor/bin/agent-loop board:list` / `board:show <task-id>` | Inspect and manage Git-native Markdown Kanban cards. |
+| `vendor/bin/agent-loop learn proposal-approve <id>` | Promotes a reviewed finding proposal into a durable project decision. |
+| `vendor/bin/agent-loop init doctor` | Diagnostic report of host readiness, adapters, and projected assets. |
+
+---
+
+## The 9 Focused Packages
+
+`agent-loop` is an umbrella architecture composed of focused, single-responsibility packages:
+
+| Package | Role | Core Responsibility | Key Artifact |
+| :--- | :--- | :--- | :--- |
+| **`voku/agent-loop`** | Kernel & Governance | Contract/Run lifecycle, cross-owner policy, routing, quality gates. | Run Manifest v1 & `next_action_kind` |
+| **`voku/agent-kanban`** | Board & Tasks | Git-native Markdown work items, deterministic parsing, task cards. | `docs/kanban/*.md` cards & hashes |
+| **`voku/agent-session`** | Working Memory | Task-local mutable state, validation evidence, pruneable retention. | Process execution proof & exit logs |
+| **`voku/agent-map`** | Code Intelligence | Structural PHP repository maps, AST dependency graphs, caller/callee. | Symbol index & dependency graph |
+| **`voku/agent-recall-compiler`** | Context & Prompts | Token-budgeted prompt compilation with active, approved rules only. | Governed prompt briefing (0 landfill) |
+| **`voku/agent-learning`** | Durable Learning | Reviewable findings, proposals, and durable decision lineage. | Corroborated findings & decisions |
+| **`voku/agent-loop-runner`** | Execution Plane | Optional isolated Git worktree runner and host execution sandbox. | Worktree isolation & runner adapters |
+| **`voku/agent-ui`** | Control Plane | Local server-rendered human cockpit for board, tasks, and evidence. | Visual human review cockpit |
+| **`voku/agent-skills`** | Guidance Catalog | Portable engineering skills, review lenses, and analysis guides. | Cross-host skills & prompt assets |
+
+---
+
+## Supported Coding Hosts
+
+`agent-loop` projects managed instructions, skills, and settings for the major coding-agent platforms:
+
+```bash
+# Install managed assets for all supported hosts
+vendor/bin/agent-loop init install-assets --agent=all
+```
+
+* **Codex** (`AGENTS.md`, `.agent-loop/codex/`)
+* **Claude Code** (`CLAUDE.md`, `.claude/skills/`)
+* **OpenCode** (`OPENCODE.md`, `.opencode/`)
+* **GitHub Copilot** (`.github/copilot-instructions.md`)
+* **Gemini CLI** (`GEMINI.md`)
+* **Antigravity** (`.agent/skills/`)
+
+---
+
+## Requirements & Installation
+
+* **PHP 8.3** or higher
+* **Composer**
+* **Git** repository
+
+Install as a development dependency:
+
+```bash
+composer require --dev voku/agent-loop
+```
+
+Initialize your repository:
+
+```bash
+vendor/bin/agent-loop init setup
+vendor/bin/agent-loop init doctor
+```
+
+---
+
+## Interactive Sandbox & Documentation App
+
+This repository contains the interactive Vite + React documentation app and **Lifecycle Simulator**:
 
 ```bash
 npm install
 npm run dev
 ```
 
-The development server listens on `http://localhost:3000` by default.
+Visit `http://localhost:3000` to explore:
+* **Interactive Lifecycle Simulator**: Test 10 distinct scenarios (Quick Fix, Happy Path, Bounded Repair, Scope Creep Refusal, Handover, Multi-Agent Board, Learning Promotion, etc.).
+* **The Connected Mental Model**: Trace data flow across all 9 packages.
+* **Claim vs Evidence Inspector**: See why cryptographic Git evidence beats natural-language chat claims.
+* **CLI Playbook**: Full input/output schema for every lifecycle command.
 
-## Production build
+---
 
-```bash
-npm run build
-npm run preview
-```
+## Quality Checks
 
-`npm run build` type-checks and bundles the application into `dist/`. `npm run preview` serves that production bundle locally so you can verify routing, assets, metadata, and layout before deployment.
-
-## GitHub Pages deployment
-
-This repository includes an automatic GitHub Pages workflow at `.github/workflows/deploy.yml`.
-
-1. In GitHub, open **Settings → Pages**.
-2. Set **Build and deployment → Source** to **GitHub Actions**.
-3. Push to the default branch, or run the workflow manually from the **Actions** tab.
-4. The workflow installs dependencies with `npm ci`, builds with `npm run build`, uploads `dist/`, and deploys it to Pages.
-
-The Vite config automatically sets the asset base path from `GITHUB_REPOSITORY` during GitHub Actions builds, so project Pages deployments resolve bundled assets under `/<repository-name>/` without hard-coded repository URLs.
-
-## Project structure
-
-```text
-.
-├── .github/workflows/deploy.yml  # GitHub Pages build and deploy workflow
-├── public/favicon.svg            # Site favicon
-├── src/App.tsx                   # Interactive sandbox simulation
-├── src/components/LandingPage.tsx# Landing page content and calls to action
-├── src/components/AgentMonitor.tsx
-├── src/components/Terminal.tsx
-├── src/data/virtualWorkspace.ts  # Demo workspace fixtures
-├── index.html                    # SEO, social metadata, and app shell
-└── vite.config.ts                # Vite, React, Tailwind, aliases, Pages base path
-```
-
-## Key Files Detector helper prompt
-
-Use this helper prompt when you want a coding agent to identify the smallest safe file set before implementing a change:
-
-```text
-You are the Key Files Detector for this repository.
-
-Goal: identify the minimum set of files that must be read or edited for the requested task before any code changes are made.
-
-Instructions:
-1. Restate the requested change in one sentence.
-2. Search the repository for relevant entry points, routes, components, configuration, tests, and documentation.
-3. Group findings into:
-   - Must read before editing
-   - Likely edit targets
-   - Tests or checks to run
-   - Files that appear related but should not be touched unless new evidence appears
-4. Explain why each file is included in one concise sentence.
-5. Do not edit files. Do not install dependencies. Do not run destructive commands.
-6. Prefer the smallest sufficient scope and call out assumptions explicitly.
-
-Return the result as a Markdown checklist.
-```
-
-## Quality checks
-
-Run these before opening or merging a pull request:
+Run before committing or submitting a pull request:
 
 ```bash
 npm run lint
 npm run build
 ```
 
-## Deployment notes
+## License
 
-- The application is static and does not require server-side secrets.
-- Environment files are optional for this landing page; do not commit local `.env` files.
-- Keep marketing copy version-flexible. Prefer compatibility wording such as `PHP 8.3+` and avoid hard-coded product version badges in page content.
+This project is open-source software licensed under the [MIT License](LICENSE).
