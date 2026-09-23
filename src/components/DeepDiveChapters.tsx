@@ -1316,7 +1316,7 @@ final class DreamEngine {
                   { concern: "Temporary working memory & validation evidence", owner: "voku/agent-session", note: "Closable & pruneable across turns" },
                   { concern: "Repository structure & code navigation", owner: "voku/agent-map", note: "AST symbols, bounded edit context (derived navigation evidence)" },
                   { concern: "Bounded task context & prompt construction", owner: "voku/agent-recall-compiler", note: "L1 briefing + selection events as machine evidence; outcomes only when judged" },
-                  { concern: "Findings, precedent and durable Learning", owner: "voku/agent-learning", note: "Findings only when evidence exists; reasonless no_durable_learning is valid" },
+                  { concern: "Findings, precedent and durable Learning", owner: "voku/agent-learning", note: "Findings only when evidence exists; no_durable_learning needs no prose reason" },
                   { concern: "Portable engineering & review guidance", owner: "voku/agent-skills", note: "Optional, separately installed catalog" },
                   { concern: "Local human control plane", owner: "voku/agent-ui", note: "Optional presentation surface; consumes owner projections without reconstructing lifecycle semantics" },
                   { concern: "Isolated coding-host execution plane", owner: "voku/agent-loop-runner", note: "Optional runner; current clean-consumer proof resolves Loop 0.20.40 without owning close-out truth" },
