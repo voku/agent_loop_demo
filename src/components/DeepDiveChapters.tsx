@@ -14,9 +14,14 @@ import { AgentLoopMark } from "./AgentLoopLogo";
 
 const ownerRows = [
   {
-    concern: "Task intent and lifecycle",
-    owner: "agent-loop + agent-kanban",
-    detail: "Contract revisions, approval boundaries, board state, and the canonical next action."
+    concern: "Lifecycle and canonical next action",
+    owner: "agent-loop",
+    detail: "Contract lifecycle, authority boundaries, routing, and completion policy."
+  },
+  {
+    concern: "Git-native work items",
+    owner: "agent-kanban",
+    detail: "Durable task cards and board state."
   },
   {
     concern: "Working evidence",
@@ -37,11 +42,6 @@ const ownerRows = [
     concern: "Findings and durable learning",
     owner: "agent-learning",
     detail: "Findings only when evidence exists, reviewed precedent, Dream maintenance, and durable decisions."
-  },
-  {
-    concern: "Optional execution and UI",
-    owner: "agent-loop-runner + agent-ui",
-    detail: "Runner executes and UI presents. Neither recreates lifecycle authority."
   }
 ];
 
@@ -254,17 +254,17 @@ status: complete`}</pre>
 
       <section className="bg-[#f8fafc] border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-2">
+          <div className="space-y-2 max-w-2xl">
             <div className="flex items-center gap-2 text-slate-500 font-mono text-xs font-bold uppercase tracking-wider">
               <GitBranch className="w-4 h-4" />
-              <span>Current coordinated release graph</span>
+              <span>Need the exact contract?</span>
             </div>
             <div className="text-xl sm:text-2xl font-black text-slate-950">
-              Loop 0.20.40 · Learning 0.18.24 · Recall 0.25.0
+              The repository documentation is the source of truth.
             </div>
-            <p className="text-sm text-slate-600 max-w-2xl leading-relaxed">
-              Runner and UI have consumer proofs against the same owner graph. The architecture is useful
-              because those consumers do not need their own private copy of the workflow.
+            <p className="text-sm text-slate-600 leading-relaxed">
+              The Overview carries the current release proof. The links here stay version-neutral and point
+              to the executable quick start and lifecycle contract so this page does not become another stale copy.
             </p>
           </div>
 
