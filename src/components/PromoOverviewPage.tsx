@@ -35,6 +35,7 @@ export function PromoOverviewPage() {
 
   const terminalCommands = [
     "composer require --dev voku/agent-loop",
+    "vendor/bin/agent-loop init scaffold --demo",
     "vendor/bin/agent-loop init install-assets --agent=codex",
     "vendor/bin/agent-loop init doctor",
     "# Start a fresh Codex session (or restart if already running)",
@@ -58,29 +59,24 @@ export function PromoOverviewPage() {
     {
       step: 1,
       name: "agent-loop enter <task>",
-      tagline: "Resume intent + context",
-      concept: "The task survives the chat",
+      tagline: "Start or resume through one front door",
+      concept: "The kernel tells you what comes next",
       command: "vendor/bin/agent-loop enter DEMO-1 --format=json",
       description:
-        "The coding agent calls enter. Agent Loop reads the approved Contract from docs/kanban/*.md and computes the exact mutation boundary.",
-      inputLabel: "Durable State on Disk",
-      inputContent: `docs/kanban/DEMO-1.md (approved Contract v1)
-Approved Scope: ["src/Domain/Order.php", "tests/OrderTest.php"]
-Non-goals: No public API changes`,
-      outputLabel: "CLI Canonical Projection",
+        "After `init scaffold --demo`, enter starts the tutorial task. A new task is normally not mutation-ready yet: the kernel returns the canonical next step instead of assuming an approved Contract already exists.",
+      inputLabel: "Tutorial State on Disk",
+      inputContent: `docs/kanban/DEMO-1.md
+Created by: init scaffold --demo
+State: tutorial task exists; durable intent may still need to be planned`,
+      outputLabel: "Typical First Projection",
       outputJson: `{
   "task_id": "DEMO-1",
-  "status": "in_progress",
-  "mutation_ready": true,
-  "next_action_kind": "host_work",
-  "next_action": "Implement order transition validator and run focused tests",
-  "scope_whitelist": [
-    "src/Domain/Order.php",
-    "tests/OrderTest.php"
-  ]
+  "mutation_ready": false,
+  "next_action_kind": "command_template",
+  "next_action": "agent-loop workflow plan DEMO-1 --by <actor> --file <path> --goal <goal> --validation <validation>"
 }`,
       takeaway:
-        "The model doesn't need to reconstruct task history from a chat transcript. If the session resets or changes models, the approved task contract remains durable on disk."
+        "Do not inject an old phase checklist between enter calls. Fill model-owned placeholders from the request and repository evidence, execute the emitted next action, then call enter again."
     },
     {
       step: 2,
@@ -91,10 +87,11 @@ Non-goals: No public API changes`,
       description:
         "Instead of inventing what to do next through prompt hallucinations, the agent executes the explicit next_action emitted by the workflow.",
       inputLabel: "Canonical Action Kinds",
-      inputContent: `• command: Run an exact deterministic command
-• command_template: Fill task-specific parameters
-• host_work: Do engineering work (code edits, test repairs)
-• decision_required: Ask human when an authority boundary is reached`,
+      inputContent: `• command: Execute next_action as written
+• command_template: Fill placeholders from request + repository evidence
+• host_work: Do the described engineering/model work
+• decision_required: Ask a human for the exact authority decision
+• none: The lifecycle has no further action`,
       outputLabel: "Current Directive for Coding Agent",
       outputJson: `{
   "next_action_kind": "host_work",
@@ -138,7 +135,7 @@ Non-goals: No public API changes`,
       concept: "Evidence without ceremony",
       command: "vendor/bin/agent-loop finish DEMO-1 --format=json",
       description:
-        "The closeout front door. It verifies current evidence, records machine facts automatically, asks for judgment only when there is something to judge, and then closes or surfaces remaining owner work.",
+        "After host-native mutation, finish reconciles current evidence and returns the next authoritative step. It may close the task or return another command, decision, review, Learning, repair, or host-work action; repeat until the lifecycle reports none / complete.",
       inputLabel: "Evidence Verification Gate",
       inputContent: `Command: composer test tests/OrderTest.php
 Exit Code: 0 (Passed)
@@ -693,6 +690,18 @@ Evidence Status: current (strictly bound to this snapshot)`,
               <div className="space-y-1 text-sm sm:text-base text-slate-600 font-normal">
                 <p>No platform migration. No new coding agent.</p>
                 <p>Start in an existing Composer repository.</p>
+                <p className="text-xs">
+                  Synced with{" "}
+                  <a
+                    href="https://github.com/voku/agent-loop/blob/main/docs/quick-start.md"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-mono font-bold text-blue-700 hover:text-blue-900 underline underline-offset-2"
+                  >
+                    agent-loop/docs/quick-start.md
+                  </a>
+                  .
+                </p>
               </div>
 
               {/* Fresh session boundary notice */}
@@ -701,7 +710,7 @@ Evidence Status: current (strictly bound to this snapshot)`,
                   <span>Fresh-Session Boundary:</span>
                 </div>
                 <p>
-                  Start a fresh Codex session (or restart Codex if already running). <code className="font-mono bg-white/80 px-1 py-0.5 rounded border border-amber-300 text-amber-900 font-semibold">install-assets</code> proves repository-side assets are projected; it does not prove an already-running host has reloaded newly installed skills.
+                  Project assets before starting the host session that should consume them. Replace <code className="font-mono bg-white/80 px-1 py-0.5 rounded border border-amber-300 text-amber-900 font-semibold">codex</code> with the coding host you actually use. <code className="font-mono bg-white/80 px-1 py-0.5 rounded border border-amber-300 text-amber-900 font-semibold">install-assets</code> proves repository-side projection, not that an already-running host retroactively reloaded those files.
                 </p>
               </div>
 

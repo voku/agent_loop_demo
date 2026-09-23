@@ -212,12 +212,19 @@ Install as a development dependency:
 composer require --dev voku/agent-loop
 ```
 
-Initialize your repository:
+Start the tutorial path used by the marketing page:
 
 ```bash
-vendor/bin/agent-loop init setup
+vendor/bin/agent-loop init scaffold --demo
+vendor/bin/agent-loop init install-assets --agent=codex
 vendor/bin/agent-loop init doctor
+vendor/bin/agent-loop enter DEMO-1 --format=json
 ```
+
+Replace `codex` with the coding host you actually use. Then follow the returned
+`next_action_kind` and `next_action`; do not insert a separate phase checklist.
+The executable tutorial source of truth is
+[`voku/agent-loop/docs/quick-start.md`](https://github.com/voku/agent-loop/blob/main/docs/quick-start.md).
 
 ---
 
