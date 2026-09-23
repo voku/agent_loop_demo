@@ -294,8 +294,8 @@ Validation: composer phpstan && composer test`
             description: "agent-recall-compiler synthesizes approved intent, repository facts, and precedent into a compact L1 briefing rather than inflating permanent context."
           },
           {
-            title: "Outcome Tracking (Selection ≠ Usefulness)",
-            description: "Proving text was selected does not prove it helped. Guidance is tracked as helpful, irrelevant, harmful, not used, or unknown to prevent prompt inflation."
+            title: "Selection Is a Fact; Usefulness Is a Judgment",
+            description: "Recall records selected guidance as machine evidence. Helpful, irrelevant, harmful, or not-used outcomes are written only when that guidance was actually judged. An untouched selection is neutral, not a fabricated verdict."
           }
         ]
       },
@@ -488,7 +488,7 @@ M tests/Domain/OrderTest.php
       },
       solution: {
         heading: "The Governed Inversion: The Fast Precedent Loop & The Slow Promotion Loop",
-        description: "Agent Loop separates learning into two distinct speeds: a fast precedent loop (Finding → LearningNote) where notes represent precedent rather than active guidance, and a slow promotion loop where recurrence across independent tasks earns a Dream maintenance pass and reviewed Proposals.",
+        description: "Agent Loop separates learning into two distinct speeds: a fast precedent loop that starts only when there is a real Finding, and a slow promotion loop where recurrence across independent tasks earns a Dream maintenance pass and reviewed Proposals. Boring runs do not manufacture learning artifacts.",
         keyPoints: [
           {
             title: "The Fast Loop (Precedent ≠ Guidance)",
@@ -500,7 +500,11 @@ M tests/Domain/OrderTest.php
           },
           {
             title: "Most Tasks Learn Nothing Permanent",
-            description: "A perfectly valid outcome is NO_DURABLE_LEARNING. The bug is fixed; no new memory entry is needed."
+            description: "A perfectly valid outcome is an explicit no_durable_learning decision with no essay attached. If there is no Finding, none is created; the bug can simply be fixed and closed."
+          },
+          {
+            title: "Sparse Outcomes, Not Fake Telemetry",
+            description: "Recall selection events are automatic evidence. Guidance outcome rows exist only for guidance that was actually judged; unjudged is neutral rather than silently rewritten as unknown, irrelevant, or not used."
           },
           {
             title: "The Best Memory is a PHPStan Rule",
@@ -1311,11 +1315,11 @@ final class DreamEngine {
                   { concern: "Git-native work items (docs/kanban/*.md)", owner: "voku/agent-kanban", note: "Task boundary & markdown board authority" },
                   { concern: "Temporary working memory & validation evidence", owner: "voku/agent-session", note: "Closable & pruneable across turns" },
                   { concern: "Repository structure & code navigation", owner: "voku/agent-map", note: "AST symbols, bounded edit context (derived navigation evidence)" },
-                  { concern: "Bounded task context & prompt construction", owner: "voku/agent-recall-compiler", note: "L1 briefing (Goal, Context, Constraints, Verification, Done When)" },
-                  { concern: "Findings, precedent and durable Learning", owner: "voku/agent-learning", note: "Findings, Dream & Proposals (evidence, not policy)" },
+                  { concern: "Bounded task context & prompt construction", owner: "voku/agent-recall-compiler", note: "L1 briefing + selection events as machine evidence; outcomes only when judged" },
+                  { concern: "Findings, precedent and durable Learning", owner: "voku/agent-learning", note: "Findings only when evidence exists; no_durable_learning needs no prose reason" },
                   { concern: "Portable engineering & review guidance", owner: "voku/agent-skills", note: "Optional, separately installed catalog" },
-                  { concern: "Local human control plane", owner: "voku/agent-ui", note: "Optional presentation surface; never invents legal actions" },
-                  { concern: "Isolated coding-host execution plane", owner: "voku/agent-loop-runner", note: "Optional runner; never decides if process exit 0 equals valid run" },
+                  { concern: "Local human control plane", owner: "voku/agent-ui", note: "Optional presentation surface; consumes owner projections without reconstructing lifecycle semantics" },
+                  { concern: "Isolated coding-host execution plane", owner: "voku/agent-loop-runner", note: "Optional runner; current clean-consumer proof resolves Loop 0.20.40 without owning close-out truth" },
                   { concern: "Shared deterministic SQLite graph mechanics", owner: "voku/agent-graph", note: "Infrastructure for Map & Learning; owns zero domain semantics" },
                 ].map((row) => (
                   <tr key={row.concern} className="hover:bg-slate-50/80 transition-colors">

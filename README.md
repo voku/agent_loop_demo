@@ -26,11 +26,12 @@ Different coding agents can work on the **same project at the same time on diffe
 * Agent A can tackle a refactoring card while Agent B works on a bugfix card.
 * Because boundaries and scope whitelists are enforced per task, agents do not step on each other's toes or pollute each other's context.
 
-### 3. Findings → Learnings: Project Intelligence That Compounds
-After every task run, review observations and lint diagnostics become structured **findings**.
-* Repeated findings synthesize into corroborated **proposals**.
-* An engineering owner approves them into **durable decisions**.
-* Each run makes the development process better and more tailored for the specific project.
+### 3. Findings → Learnings: Project Intelligence Without Paperwork
+A run creates learning evidence **only when something notable actually happened**.
+* Recall selections are machine facts; usefulness outcomes are recorded only when guidance was actually judged.
+* A run with no reusable lesson can close with an explicit `no_durable_learning` decision and no explanatory essay.
+* A **Finding** is created only when there is actual finding evidence; quiet runs do not manufacture telemetry.
+* Repeated evidence can synthesize into reviewable **proposals**, and a human owner decides whether anything becomes durable guidance.
 
 ### 4. Deterministic Checks Reduce Tokens Over Time
 When a project learning is approved, we don't dump another 500 words into a bloated system prompt or `MEMORY.md` landfill. Instead, we codify it into a **deterministic check**:
@@ -99,9 +100,21 @@ Keep useful lessons ──► deterministic checks ──► faster, cheaper fut
 2. **Multi-agent Kanban concurrency.** Different agents can work on the same project simultaneously, each assigned to a separate card on the Git-native board.
 3. **The agent gets less context, but better context.** Instead of feeding the model the whole repository or an endless memory log, `agent-map` and `agent-recall-compiler` select only the symbols and rules relevant to the task at hand.
 4. **Evidence beats confidence.** A model saying "done" is not evidence. `agent-loop` checks recorded command runs, exit codes, and git diffs before allowing a task to finish.
-5. **Useful experience improves later work.** Real findings from past tasks can be promoted to durable rules. The next time an agent touches related code, it gets the benefit of that experience automatically.
+5. **Useful experience improves later work without inventing it.** Real findings can become precedent and, after review, durable rules. Runs with nothing reusable stay quiet instead of padding history with synthetic observations.
 6. **Deterministic checks reduce tokens over time.** Approved learnings are translated into PHPStan rules, linters, and tests. Mechanical checks run for free, keeping prompt tokens low and quality reproducible.
 7. **Engineering judgment stays engineering judgment.** Humans approve contracts, scope expansions, policy waivers, and durable rules. The kernel enforces the boundaries; the agent does the coding; you remain in control.
+
+---
+
+## Current Release Proof
+
+The current coordinated graph is not just version-compatible on paper:
+
+* **`voku/agent-loop 0.20.40`** ships the sparse close-out model with `voku/agent-learning 0.18.24` and `voku/agent-recall-compiler 0.25.0`.
+* **`voku/agent-loop-runner`** resolves and executes that released graph in clean-consumer proofs while keeping its broader supported Loop range.
+* **`voku/agent-ui`** has been validated against the same graph on PHP 8.3, 8.4, and 8.5, including `--prefer-lowest` and Runner-present / Runner-absent matrices.
+
+That separation is intentional: Loop owns lifecycle truth, Recall owns selection/outcome semantics, Learning owns durable evidence, Runner executes, and UI presents. Consumers do not reconstruct the workflow in parallel.
 
 ---
 
@@ -208,9 +221,9 @@ vendor/bin/agent-loop init doctor
 
 ---
 
-## Interactive Sandbox & Documentation App
+## Marketing & Documentation App
 
-This repository contains the interactive Vite + React documentation app and **Lifecycle Simulator**:
+This repository contains the Vite + React landing page and architecture deep dive:
 
 ```bash
 npm install
@@ -218,10 +231,10 @@ npm run dev
 ```
 
 Visit `http://localhost:3000` to explore:
-* **Interactive Lifecycle Simulator**: Test 10 distinct scenarios (Quick Fix, Happy Path, Bounded Repair, Scope Creep Refusal, Handover, Multi-Agent Board, Learning Promotion, etc.).
-* **The Connected Mental Model**: Trace data flow across all 9 packages.
-* **Claim vs Evidence Inspector**: See why cryptographic Git evidence beats natural-language chat claims.
-* **CLI Playbook**: Full input/output schema for every lifecycle command.
+* **4-step everyday workflow**: `enter` → canonical next action → normal implementation → `finish`.
+* **Sparse close-out model**: machine facts stay automatic while qualitative outcomes are recorded only when actually judged.
+* **Architecture chapters**: trace ownership across Loop, Session, Map, Recall, Learning, Runner, UI, and supporting packages.
+* **Current release proof**: see the released core graph and the consumer evidence behind Runner/UI compatibility.
 
 ---
 
