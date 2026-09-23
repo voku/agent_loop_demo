@@ -224,7 +224,7 @@ Evidence Status: current (strictly bound to this snapshot)`,
               }`}
             >
               <Workflow className="w-3.5 h-3.5 text-blue-600" />
-              <span>Deep Dive: Chapters</span>
+              <span>Deep Dive</span>
             </button>
 
             <button
@@ -976,13 +976,13 @@ Evidence Status: current (strictly bound to this snapshot)`,
           <div className="space-y-2 text-left">
             <div className="inline-flex items-center gap-2 font-mono text-xs font-bold text-cyan-400 uppercase tracking-widest bg-cyan-950/70 border border-cyan-700/60 px-2.5 py-1 rounded-md">
               <Workflow className="w-3.5 h-3.5" />
-              <span>Architecture Chapters</span>
+              <span>Architecture Deep Dive</span>
             </div>
             <h3 className="text-2xl font-black tracking-tight text-white">
-              Deep Dive: Connecting the Chapters (Code Files)
+              Deep Dive: Three Ideas Explain the Architecture
             </h3>
             <p className="text-sm text-slate-300 leading-relaxed max-w-2xl font-normal">
-              Inspect how <span className="font-mono text-cyan-300">docs/kanban/*.md</span>, <span className="font-mono text-cyan-300">TaskContract.php</span>, <span className="font-mono text-cyan-300">EnterCommand.php</span>, <span className="font-mono text-cyan-300">ScopeGuard.php</span>, and <span className="font-mono text-cyan-300">FinishCommand.php</span> connect state to keep the agent's work reliable.
+              See the architecture through three practical ideas: one lifecycle, one semantic owner per kind of truth, and sparse learning that records only what actually happened.
             </p>
           </div>
 
@@ -994,7 +994,7 @@ Evidence Status: current (strictly bound to this snapshot)`,
             }}
             className="px-6 py-3.5 bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-mono text-xs font-black uppercase tracking-wider rounded-xl flex items-center gap-2 shadow-lg shadow-cyan-500/20 transition-all cursor-pointer shrink-0 hover:scale-[1.02]"
           >
-            <span>Explore Code Chapters</span>
+            <span>Explore Deep Dive</span>
             <ArrowRight className="w-4 h-4 stroke-[2.5]" />
           </button>
         </div>
