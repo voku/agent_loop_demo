@@ -134,27 +134,26 @@ Non-goals: No public API changes`,
     {
       step: 4,
       name: "agent-loop finish <task>",
-      tagline: "Validate • Review • Learn • Close",
-      concept: "Evidence beats confidence",
+      tagline: "Validate • Review • Record only what happened • Close",
+      concept: "Evidence without ceremony",
       command: "vendor/bin/agent-loop finish DEMO-1 --format=json",
       description:
-        "The closeout front door. Reconciles state to close the Session, complete the Run, or surface remaining owner work such as Kanban reconciliation.",
+        "The closeout front door. It verifies current evidence, records machine facts automatically, asks for judgment only when there is something to judge, and then closes or surfaces remaining owner work.",
       inputLabel: "Evidence Verification Gate",
       inputContent: `Command: composer test tests/OrderTest.php
 Exit Code: 0 (Passed)
 Git Tree Snapshot: git-tree-v1:9f8a2b4...
 Evidence Status: current (strictly bound to this snapshot)`,
-      outputLabel: "Reconciliation & Closeout Result",
+      outputLabel: "Closeout Result — No Fabricated Outcome",
       outputJson: `{
   "task_id": "DEMO-1",
   "validation_passed": true,
   "evidence_state": "current",
-  "learning_decision": "NO_DURABLE_LEARNING",
   "next_action_kind": "none",
   "status": "completed"
 }`,
       takeaway:
-        "The workflow never accepts 'Tests passed' as conversational confidence. If the Run is complete but the card remains active, Loop surfaces board.active_after_run_complete and returns a host_work reconciliation owned by agent-kanban."
+        "Selection is machine evidence; usefulness is a judgment. If recalled guidance was never judged, no outcome row is invented. If there is no Finding, none is created. A no-durable-learning decision can stay a cheap explicit decision without an essay."
     }
   ];
 
@@ -278,7 +277,7 @@ Evidence Status: current (strictly bound to this snapshot)`,
                 </span>
               </h1>
               <p className="text-sm sm:text-base md:text-lg text-slate-600 leading-relaxed font-normal">
-                A local-first PHP workflow around the coding agent you already use: durable task intent, bounded context, explicit evidence, and useful learning that survives the chat.
+                A local-first PHP workflow around the coding agent you already use: durable task intent, bounded context, explicit evidence, and learning only when the evidence says there is something worth keeping.
               </p>
             </div>
 
@@ -286,6 +285,9 @@ Evidence Status: current (strictly bound to this snapshot)`,
             <div className="flex flex-col items-start lg:items-end gap-3 shrink-0 self-start lg:self-center">
               {/* Badges */}
               <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 justify-start lg:justify-end">
+                <span className="px-3 py-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-xs font-mono font-bold tracking-tight shadow-2xs">
+                  agent-loop 0.20.40
+                </span>
                 <span className="px-3 py-1 rounded-lg bg-slate-100 border border-slate-200/80 text-slate-800 text-xs font-mono font-bold tracking-tight shadow-2xs">
                   PHP 8.3+
                 </span>
@@ -544,7 +546,7 @@ Evidence Status: current (strictly bound to this snapshot)`,
                         agent-loop finish <span className="text-cyan-400">&lt;task&gt;</span>
                       </div>
                       <div className="text-xs text-slate-400 mt-0.5">
-                        validate • review • learn • close
+                        validate • review • record only what happened • close
                       </div>
                     </div>
                   </button>
@@ -609,15 +611,15 @@ Evidence Status: current (strictly bound to this snapshot)`,
                     </div>
                   </div>
 
-                  {/* 4. Learning can disappear */}
+                  {/* 4. Quiet runs stay quiet */}
                   <div className="bg-[#e2f7ea]/90 border border-emerald-200/60 rounded-2xl p-3.5 sm:p-4 flex items-center gap-3.5 transition-all hover:bg-emerald-100/90 shadow-2xs">
                     <div className="w-10 h-10 rounded-full bg-[#16a34a] text-white flex items-center justify-center shrink-0 shadow-xs">
                       <Lightbulb className="w-5 h-5" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-slate-900 text-base leading-tight">Learning can disappear</h3>
+                      <h3 className="font-bold text-slate-900 text-base leading-tight">Quiet runs stay quiet</h3>
                       <p className="text-xs sm:text-sm text-slate-600 leading-snug mt-0.5">
-                        Stable lessons become tests, rules or CI.
+                        No fake Finding or outcome prose when nothing happened.
                       </p>
                     </div>
                   </div>
@@ -638,6 +640,40 @@ Evidence Status: current (strictly bound to this snapshot)`,
               </div>
             </div>
 
+          </div>
+
+          {/* CURRENT RELEASE PROOF */}
+          <div className="bg-[#eef6ff] border border-blue-200/80 rounded-3xl p-5 sm:p-6 shadow-xs">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="max-w-xl">
+                <div className="font-mono text-[11px] font-bold uppercase tracking-widest text-blue-700">
+                  Current release proof
+                </div>
+                <h3 className="text-xl sm:text-2xl font-black tracking-tight text-slate-950 mt-1">
+                  The ecosystem consumes the same owner contracts.
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-600 mt-1 leading-relaxed">
+                  Not a roadmap claim: the current release graph was resolved and exercised across the optional execution and control planes.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 w-full lg:max-w-3xl">
+                <div className="bg-white border border-blue-200 rounded-2xl p-3.5">
+                  <div className="font-mono text-xs font-black text-blue-700">Core</div>
+                  <div className="font-bold text-slate-900 text-sm mt-1">agent-loop 0.20.40</div>
+                  <div className="text-[11px] text-slate-500 mt-1">Learning 0.18.24 · Recall 0.25.0</div>
+                </div>
+                <div className="bg-white border border-blue-200 rounded-2xl p-3.5">
+                  <div className="font-mono text-xs font-black text-blue-700">Runner</div>
+                  <div className="font-bold text-slate-900 text-sm mt-1">Clean consumer proof</div>
+                  <div className="text-[11px] text-slate-500 mt-1">Released 0.20.40 graph resolved and executed</div>
+                </div>
+                <div className="bg-white border border-blue-200 rounded-2xl p-3.5">
+                  <div className="font-mono text-xs font-black text-blue-700">UI</div>
+                  <div className="font-bold text-slate-900 text-sm mt-1">Coordinated dependency graph</div>
+                  <div className="text-[11px] text-slate-500 mt-1">PHP 8.3/8.4/8.5 · lowest-supported · Runner matrix</div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* BOTTOM BANNER: TRY ONE GOVERNED TASK */}
@@ -760,7 +796,7 @@ Evidence Status: current (strictly bound to this snapshot)`,
                 Keep the agent. Add a workflow around it.
               </div>
               <div className="text-slate-500 text-xs">
-                Grounded in current main + README / quick-start • 18 Sep 2026
+                Grounded in released owner + consumer proofs • 23 Sep 2026
               </div>
             </div>
           </div>
