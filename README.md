@@ -240,7 +240,7 @@ npm run dev
 Visit `http://localhost:3000` to explore:
 * **4-step everyday workflow**: `enter` → canonical next action → normal implementation → `finish`.
 * **Sparse close-out model**: machine facts stay automatic while qualitative outcomes are recorded only when actually judged.
-* **Architecture chapters**: trace ownership across Loop, Session, Map, Recall, Learning, Runner, UI, and supporting packages.
+* **3-part architecture deep dive**: understand the lifecycle, package ownership boundaries, and sparse learning model without reproducing internal workflow phases.
 * **Current release proof**: see the released core graph and the consumer evidence behind Runner/UI compatibility.
 
 ---
