@@ -169,7 +169,11 @@ Evidence Status: current (strictly bound to this snapshot)`,
         <div className="max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           
           {/* Logo & Brand */}
-          <div className="flex items-center gap-3">
+          <a
+            href={import.meta.env.BASE_URL}
+            aria-label="Back to the agent-loop overview"
+            className="flex items-center gap-3 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-600"
+          >
             <AgentLoopMark className="w-8 h-4 sm:w-10 sm:h-5 text-blue-600" idPrefix="promo-nav-logo" />
             <div>
               <span className="font-mono text-base sm:text-lg font-black tracking-tight text-slate-950 flex items-center gap-2">
@@ -179,7 +183,7 @@ Evidence Status: current (strictly bound to this snapshot)`,
                 Governed Local Workflows for Coding Agents
               </span>
             </div>
-          </div>
+          </a>
 
           {/* Navigation Links & Action */}
           <div className="flex items-center gap-2 sm:gap-3">
