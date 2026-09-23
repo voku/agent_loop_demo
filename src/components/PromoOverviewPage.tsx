@@ -21,8 +21,6 @@ import {
   Play,
   RotateCw,
   Sparkles,
-  FileCode,
-  Info,
   Workflow
 } from "lucide-react";
 import { AgentLoopMark } from "./AgentLoopLogo";
@@ -31,7 +29,6 @@ import { DeepDiveChapters } from "./DeepDiveChapters";
 export function PromoOverviewPage() {
   const [activeTab, setActiveTab] = useState<"overview" | "deepdive">("overview");
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
-  const [activeWorkflowStep, setActiveWorkflowStep] = useState<number>(1);
 
   const terminalCommands = [
     "composer require --dev voku/agent-loop",
@@ -54,107 +51,36 @@ export function PromoOverviewPage() {
     setTimeout(() => setCopiedIndex(null), 2000);
   };
 
-  // 4 Steps of the everyday loop for the interactive walkthrough
+  const scrollToWorkflow = () => {
+    document.getElementById("workflow-walkthrough")?.scrollIntoView({ behavior: "smooth" });
+  };
+
   const workflowSteps = [
     {
       step: 1,
-      name: "agent-loop enter <task>",
-      tagline: "Start or resume through one front door",
-      concept: "The kernel tells you what comes next",
-      command: "vendor/bin/agent-loop enter DEMO-1 --format=json",
-      description:
-        "After `init scaffold --demo`, enter starts the tutorial task. A new task is normally not mutation-ready yet: the kernel returns the canonical next step instead of assuming an approved Contract already exists.",
-      inputLabel: "Tutorial State on Disk",
-      inputContent: `docs/kanban/DEMO-1.md
-Created by: init scaffold --demo
-State: tutorial task exists; durable intent may still need to be planned`,
-      outputLabel: "Typical First Projection",
-      outputJson: `{
-  "task_id": "DEMO-1",
-  "mutation_ready": false,
-  "next_action_kind": "command_template",
-  "next_action": "agent-loop workflow plan DEMO-1 --by <actor> --file <path> --goal <goal> --validation <validation>"
-}`,
-      takeaway:
-        "Do not inject an old phase checklist between enter calls. Fill model-owned placeholders from the request and repository evidence, execute the emitted next action, then call enter again."
+      title: "Enter the task",
+      command: "agent-loop enter <task> --format=json",
+      description: "Start or resume through the lifecycle front door. Read next_action_kind and next_action."
     },
     {
       step: 2,
-      name: "follow next_action",
-      tagline: "Command • Decision • Host work",
-      concept: "Canonical routing beats prompt guesswork",
-      command: "# Host agent inspects next_action_kind & next_action",
-      description:
-        "Instead of inventing what to do next through prompt hallucinations, the agent executes the explicit next_action emitted by the workflow.",
-      inputLabel: "Canonical Action Kinds",
-      inputContent: `• command: Execute next_action as written
-• command_template: Fill placeholders from request + repository evidence
-• host_work: Do the described engineering/model work
-• decision_required: Ask a human for the exact authority decision
-• none: The lifecycle has no further action`,
-      outputLabel: "Current Directive for Coding Agent",
-      outputJson: `{
-  "next_action_kind": "host_work",
-  "subject": "order_state_guard",
-  "directive": "Add state-transition guard rejecting cancelled orders before status change",
-  "enforced_files": ["src/Domain/Order.php"]
-}`,
-      takeaway:
-        "No giant phase machine hidden in system prompts. No memorizing 20 workflow commands. The local kernel tells the agent what to do next."
+      title: "Follow the canonical next action",
+      command: "command · command_template · host_work · decision_required · none",
+      description: "Execute what the kernel emitted. Do not recreate workflow phases in host prose."
     },
     {
       step: 3,
-      name: "implement",
-      tagline: "Normal repository tools within bounds",
-      concept: "Strict scope guard protects the repository",
-      command: "# Agent edits code with normal editor & LSP tools",
-      description:
-        "The coding host (Claude Code, Codex, Copilot, Cursor, Gemini) edits files safely within the approved scope whitelist.",
-      inputLabel: "Approved Scope Whitelist",
-      inputContent: `[AUTHORIZED] src/Domain/Order.php
-[AUTHORIZED] tests/OrderTest.php
-[BLOCKED]    config/database.php (out of bounds)
-[BLOCKED]    src/Http/Api.php    (unauthorized scope expansion)`,
-      outputLabel: "Diff Inspection & Boundary Check",
-      outputJson: `{
-  "git_modified_files": [
-    "src/Domain/Order.php",
-    "tests/OrderTest.php"
-  ],
-  "scope_violation": false,
-  "diff_lines": 34,
-  "status": "ready_for_validation"
-}`,
-      takeaway:
-        "The agent works with its normal coding tools. If it attempts to touch unauthorized files, Agent Loop flags the boundary and prevents unapproved repository drift."
+      title: "Do normal engineering work",
+      command: "editor · tests · PHPStan · Git · repository tools",
+      description: "When host work is authorized, change the code inside the approved boundary using normal tools."
     },
     {
       step: 4,
-      name: "agent-loop finish <task>",
-      tagline: "Validate • Review • Record only what happened • Close",
-      concept: "Evidence without ceremony",
-      command: "vendor/bin/agent-loop finish DEMO-1 --format=json",
-      description:
-        "After host-native mutation, finish reconciles current evidence and returns the next authoritative step. It may close the task or return another command, decision, review, Learning, repair, or host-work action; repeat until the lifecycle reports none / complete.",
-      inputLabel: "Evidence Verification Gate",
-      inputContent: `Command: composer test tests/OrderTest.php
-Exit Code: 0 (Passed)
-Git Tree Snapshot: git-tree-v1:9f8a2b4...
-Evidence Status: current (strictly bound to this snapshot)`,
-      outputLabel: "Closeout Result — No Fabricated Outcome",
-      outputJson: `{
-  "task_id": "DEMO-1",
-  "validation_passed": true,
-  "evidence_state": "current",
-  "next_action_kind": "none",
-  "status": "completed"
-}`,
-      takeaway:
-        "Selection is machine evidence; usefulness is a judgment. If recalled guidance was never judged, no outcome row is invented. If there is no Finding, none is created. A no-durable-learning decision can stay a cheap explicit decision without an essay."
+      title: "Finish and reconcile",
+      command: "agent-loop finish <task> --format=json",
+      description: "Reconcile evidence. If another action is returned, follow it; stop only when the lifecycle reports none / complete."
     }
   ];
-
-  const currentStep = workflowSteps[activeWorkflowStep - 1];
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-900 selection:bg-blue-600 selection:text-white flex flex-col font-sans">
@@ -420,16 +346,8 @@ Evidence Status: current (strictly bound to this snapshot)`,
                   {/* Step 1 */}
                   <button
                     type="button"
-                    onClick={() => {
-                      setActiveWorkflowStep(1);
-                      const el = document.getElementById("workflow-walkthrough");
-                      if (el) el.scrollIntoView({ behavior: "smooth" });
-                    }}
-                    className={`w-full text-left rounded-2xl p-3.5 sm:p-4 flex items-center gap-3.5 transition-all cursor-pointer group shadow-xs ${
-                      activeWorkflowStep === 1
-                        ? "bg-[#183054] border-2 border-cyan-400 ring-2 ring-cyan-400/20"
-                        : "bg-[#132238] hover:bg-[#182c49] border border-slate-700/80"
-                    }`}
+                    onClick={scrollToWorkflow}
+                    className="w-full text-left rounded-2xl p-3.5 sm:p-4 flex items-center gap-3.5 transition-all cursor-pointer group shadow-xs bg-[#132238] hover:bg-[#182c49] border border-slate-700/80"
                   >
                     <div className="w-9 h-9 rounded-full bg-[#2563eb] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-sm group-hover:scale-105 transition-transform">
                       1
@@ -455,16 +373,8 @@ Evidence Status: current (strictly bound to this snapshot)`,
                   {/* Step 2 */}
                   <button
                     type="button"
-                    onClick={() => {
-                      setActiveWorkflowStep(2);
-                      const el = document.getElementById("workflow-walkthrough");
-                      if (el) el.scrollIntoView({ behavior: "smooth" });
-                    }}
-                    className={`w-full text-left rounded-2xl p-3.5 sm:p-4 flex items-center gap-3.5 transition-all cursor-pointer group shadow-xs ${
-                      activeWorkflowStep === 2
-                        ? "bg-[#183054] border-2 border-cyan-400 ring-2 ring-cyan-400/20"
-                        : "bg-[#132238] hover:bg-[#182c49] border border-slate-700/80"
-                    }`}
+                    onClick={scrollToWorkflow}
+                    className="w-full text-left rounded-2xl p-3.5 sm:p-4 flex items-center gap-3.5 transition-all cursor-pointer group shadow-xs bg-[#132238] hover:bg-[#182c49] border border-slate-700/80"
                   >
                     <div className="w-9 h-9 rounded-full bg-[#2563eb] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-sm group-hover:scale-105 transition-transform">
                       2
@@ -490,16 +400,8 @@ Evidence Status: current (strictly bound to this snapshot)`,
                   {/* Step 3 */}
                   <button
                     type="button"
-                    onClick={() => {
-                      setActiveWorkflowStep(3);
-                      const el = document.getElementById("workflow-walkthrough");
-                      if (el) el.scrollIntoView({ behavior: "smooth" });
-                    }}
-                    className={`w-full text-left rounded-2xl p-3.5 sm:p-4 flex items-center gap-3.5 transition-all cursor-pointer group shadow-xs ${
-                      activeWorkflowStep === 3
-                        ? "bg-[#183054] border-2 border-cyan-400 ring-2 ring-cyan-400/20"
-                        : "bg-[#132238] hover:bg-[#182c49] border border-slate-700/80"
-                    }`}
+                    onClick={scrollToWorkflow}
+                    className="w-full text-left rounded-2xl p-3.5 sm:p-4 flex items-center gap-3.5 transition-all cursor-pointer group shadow-xs bg-[#132238] hover:bg-[#182c49] border border-slate-700/80"
                   >
                     <div className="w-9 h-9 rounded-full bg-[#2563eb] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-sm group-hover:scale-105 transition-transform">
                       3
@@ -525,16 +427,8 @@ Evidence Status: current (strictly bound to this snapshot)`,
                   {/* Step 4 */}
                   <button
                     type="button"
-                    onClick={() => {
-                      setActiveWorkflowStep(4);
-                      const el = document.getElementById("workflow-walkthrough");
-                      if (el) el.scrollIntoView({ behavior: "smooth" });
-                    }}
-                    className={`w-full text-left rounded-2xl p-3.5 sm:p-4 flex items-center gap-3.5 transition-all cursor-pointer group shadow-xs ${
-                      activeWorkflowStep === 4
-                        ? "bg-[#183054] border-2 border-cyan-400 ring-2 ring-cyan-400/20"
-                        : "bg-[#132238] hover:bg-[#182c49] border border-slate-700/80"
-                    }`}
+                    onClick={scrollToWorkflow}
+                    className="w-full text-left rounded-2xl p-3.5 sm:p-4 flex items-center gap-3.5 transition-all cursor-pointer group shadow-xs bg-[#132238] hover:bg-[#182c49] border border-slate-700/80"
                   >
                     <div className="w-9 h-9 rounded-full bg-[#2563eb] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-sm group-hover:scale-105 transition-transform">
                       4
@@ -717,14 +611,11 @@ Evidence Status: current (strictly bound to this snapshot)`,
               <div className="pt-1 flex flex-wrap items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => {
-                    const el = document.getElementById("workflow-walkthrough");
-                    if (el) el.scrollIntoView({ behavior: "smooth" });
-                  }}
+                  onClick={scrollToWorkflow}
                   className="px-5 py-2.5 bg-[#2563eb] hover:bg-blue-700 text-white font-mono text-xs sm:text-sm font-bold uppercase tracking-wider rounded-xl flex items-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer"
                 >
                   <Play className="w-4 h-4 fill-current" />
-                  <span>See How the Workflow Operates</span>
+                  <span>See the 4-Step Loop</span>
                 </button>
               </div>
             </div>
@@ -817,157 +708,65 @@ Evidence Status: current (strictly bound to this snapshot)`,
         </div>
 
         {/* ======================================================================= */}
-        {/* INTERACTIVE WORKFLOW WALKTHROUGH (SIMPLE, DIRECT & VISUAL)              */}
+        {/* THE EVERYDAY LOOP                                                       */}
         {/* ======================================================================= */}
         <section id="workflow-walkthrough" className="space-y-5 pt-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <div className="inline-flex items-center gap-1.5 font-mono text-xs font-bold text-blue-700 uppercase tracking-widest bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-md">
-                <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-                Interactive Workflow Walkthrough
-              </div>
-              <h2 className="text-2xl sm:text-3xl font-black text-slate-950 tracking-tight mt-1.5">
-                How the 4-Step Everyday Loop Operates
-              </h2>
-              <p className="text-slate-600 text-sm sm:text-base mt-1">
-                Click any step to inspect the exact input, canonical next action, and why this keeps engineering reliable.
-              </p>
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-1.5 font-mono text-xs font-bold text-blue-700 uppercase tracking-widest bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-md">
+              <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+              Everyday Workflow
             </div>
-
-            <div className="flex items-center gap-1.5 bg-white border border-slate-200 p-1 rounded-xl shadow-2xs">
-              {[1, 2, 3, 4].map((stepNum) => (
-                <button
-                  key={stepNum}
-                  onClick={() => setActiveWorkflowStep(stepNum)}
-                  className={`w-9 h-9 rounded-lg font-mono text-xs font-bold flex items-center justify-center transition-all cursor-pointer ${
-                    activeWorkflowStep === stepNum
-                      ? "bg-blue-600 text-white shadow-xs"
-                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                  }`}
-                >
-                  {stepNum}
-                </button>
-              ))}
-            </div>
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-950 tracking-tight mt-1.5">
+              The everyday loop is only four moves.
+            </h2>
+            <p className="text-slate-600 text-sm sm:text-base mt-1 leading-relaxed">
+              The host does not need to memorize Agent Loop's internal phases. It enters the task, follows the
+              canonical next action, does normal engineering work when authorized, and finishes through the kernel.
+            </p>
           </div>
 
-          {/* ACTIVE STEP CARD */}
-          <div className="bg-[#0B1528] border border-slate-700/80 rounded-3xl p-5 sm:p-7 text-white shadow-xl space-y-6">
-            
-            {/* Step Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
-              <div className="flex items-center gap-3.5">
-                <div className="w-10 h-10 rounded-2xl bg-blue-600 text-white font-mono font-bold text-lg flex items-center justify-center shadow-md">
-                  {currentStep.step}
-                </div>
-                <div>
-                  <div className="font-mono text-xs font-bold text-cyan-400 uppercase tracking-wider">
-                    Step {currentStep.step} of 4 • {currentStep.tagline}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {workflowSteps.map((step) => (
+              <div key={step.step} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
+                <div className="flex items-start gap-4">
+                  <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center font-mono font-black text-sm shrink-0">
+                    {step.step}
                   </div>
-                  <h3 className="text-xl sm:text-2xl font-mono font-black text-white">
-                    {currentStep.name}
-                  </h3>
+                  <div className="min-w-0">
+                    <h3 className="font-bold text-slate-950">{step.title}</h3>
+                    <div className="mt-2 bg-slate-950 text-cyan-300 border border-slate-800 rounded-lg px-3 py-2 font-mono text-xs overflow-x-auto">
+                      {step.command}
+                    </div>
+                    <p className="text-sm text-slate-600 mt-2 leading-relaxed">{step.description}</p>
+                  </div>
                 </div>
               </div>
+            ))}
+          </div>
 
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1 bg-cyan-950/80 border border-cyan-800/80 text-cyan-300 font-mono text-xs rounded-lg font-medium">
-                  {currentStep.concept}
-                </span>
+          <div className="bg-[#0B1528] border border-slate-800 rounded-2xl p-5 sm:p-6 text-white flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+            <div className="space-y-2">
+              <div className="font-mono text-xs font-bold uppercase tracking-widest text-cyan-400">
+                The whole host contract
               </div>
-            </div>
-
-            {/* Explanation & Command */}
-            <div className="space-y-4">
-              <p className="text-slate-200 text-sm sm:text-base leading-relaxed">
-                {currentStep.description}
+              <div className="font-mono text-sm sm:text-base text-slate-200">
+                enter → follow next_action → host work when authorized → finish → repeat
+              </div>
+              <p className="text-xs sm:text-sm text-slate-400">
+                If <code className="font-mono text-cyan-300">finish</code> returns another action, continue from step 2.
+                <code className="font-mono text-cyan-300"> none</code> means the lifecycle has no further action.
               </p>
-
-              {/* Terminal command */}
-              <div className="bg-[#050A14] border border-slate-800 rounded-xl p-3.5 flex items-center justify-between gap-3 font-mono text-xs sm:text-sm text-cyan-300">
-                <div className="flex items-center gap-2 truncate">
-                  <span className="text-slate-500 font-bold">$</span>
-                  <span className="truncate">{currentStep.command}</span>
-                </div>
-                <button
-                  onClick={() => handleCopyCommand(currentStep.command, 50 + currentStep.step)}
-                  className="text-slate-400 hover:text-white p-1 cursor-pointer transition-colors"
-                  title="Copy command"
-                >
-                  {copiedIndex === 50 + currentStep.step ? (
-                    <Check className="w-4 h-4 text-emerald-400" />
-                  ) : (
-                    <Copy className="w-4 h-4" />
-                  )}
-                </button>
-              </div>
             </div>
 
-            {/* 2-Column: Input / State & Canonical Output */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
-              {/* Left: Input */}
-              <div className="bg-[#070F1E] border border-slate-800 rounded-2xl p-4 space-y-2">
-                <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <FileCode className="w-3.5 h-3.5 text-blue-400" />
-                  <span>{currentStep.inputLabel}</span>
-                </div>
-                <pre className="text-slate-300 leading-relaxed overflow-x-auto whitespace-pre-wrap font-sans text-xs sm:text-[13px] bg-[#050A14] p-3 rounded-xl border border-slate-800/80">
-                  {currentStep.inputContent}
-                </pre>
-              </div>
-
-              {/* Right: Output */}
-              <div className="bg-[#070F1E] border border-slate-800 rounded-2xl p-4 space-y-2">
-                <div className="text-[11px] font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Terminal className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>{currentStep.outputLabel}</span>
-                </div>
-                <pre className="text-cyan-300/90 leading-relaxed overflow-x-auto font-mono text-xs sm:text-[12px] bg-[#050A14] p-3 rounded-xl border border-slate-800/80">
-                  {currentStep.outputJson}
-                </pre>
-              </div>
-            </div>
-
-            {/* Takeaway Box */}
-            <div className="p-4 bg-blue-950/40 border border-blue-800/60 rounded-2xl flex items-start gap-3">
-              <Info className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
-              <div className="space-y-0.5">
-                <div className="font-mono text-xs font-bold text-cyan-300 uppercase tracking-wider">
-                  Why This Makes Work Reliable
-                </div>
-                <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-sans">
-                  {currentStep.takeaway}
-                </p>
-              </div>
-            </div>
-
-            {/* Step Controls (Prev / Next) */}
-            <div className="pt-2 flex items-center justify-between">
-              <button
-                disabled={activeWorkflowStep === 1}
-                onClick={() => setActiveWorkflowStep((prev) => Math.max(1, prev - 1))}
-                className={`px-4 py-2 rounded-xl font-mono text-xs font-bold transition-all cursor-pointer ${
-                  activeWorkflowStep === 1
-                    ? "opacity-30 cursor-not-allowed text-slate-500"
-                    : "bg-slate-800 hover:bg-slate-700 text-slate-200"
-                }`}
-              >
-                ← Previous Step
-              </button>
-
-              <div className="flex items-center gap-1 text-xs font-mono text-slate-400">
-                <span>Step {activeWorkflowStep} of 4</span>
-              </div>
-
-              <button
-                onClick={() => setActiveWorkflowStep((prev) => (prev % 4) + 1)}
-                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-mono text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-md hover:shadow-cyan-500/20"
-              >
-                <span>{activeWorkflowStep === 4 ? "Restart Loop (Step 1)" : "Next Step"}</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-
+            <a
+              href="https://github.com/voku/agent-loop/blob/main/docs/quick-start.md"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2.5 bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-mono text-xs font-black rounded-xl flex items-center gap-2 transition-colors shrink-0"
+            >
+              <span>Real Quick Start</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
           </div>
         </section>
 
