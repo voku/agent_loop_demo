@@ -1,6 +1,8 @@
 {
   "name": "agent-loop — Governed Local Workflows for Coding Agents",
-  "description": "A local-first PHP workflow kernel for governed coding-agent work: durable task authority, bounded context, owner-backed evidence, and canonical next-action routing.",
+  "description": "A local-first PHP workflow kernel for governed coding-agent work: durable task authority, bounded context, owner-backed evidence, sparse learning, and canonical next-action routing.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }
