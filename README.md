@@ -30,7 +30,7 @@ Different coding agents can work on the **same project at the same time on diffe
 A run creates learning evidence **only when something notable actually happened**.
 * Recall selections are machine facts; usefulness outcomes are recorded only when guidance was actually judged.
 * A run with no reusable lesson can close with an explicit `no_durable_learning` decision and no explanatory essay.
-* A **Finding** exists only when there is a finding; quiet runs do not manufacture telemetry.
+* A **Finding** is created only when there is actual finding evidence; quiet runs do not manufacture telemetry.
 * Repeated evidence can synthesize into reviewable **proposals**, and a human owner decides whether anything becomes durable guidance.
 
 ### 4. Deterministic Checks Reduce Tokens Over Time
