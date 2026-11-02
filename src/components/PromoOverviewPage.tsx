@@ -552,7 +552,7 @@ export function PromoOverviewPage() {
                 </p>
               </div>
               <a
-                href="https://github.com/voku/agent-loop/blob/main/CHANGELOG.md"
+                href="https://github.com/voku/agent-loop/blob/0.20.80/CHANGELOG.md"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="shrink-0 inline-flex items-center gap-2 px-3 py-2 bg-white border border-blue-300 rounded-lg text-xs font-mono font-bold text-blue-800 hover:bg-blue-50 transition-colors"
@@ -618,7 +618,7 @@ export function PromoOverviewPage() {
                   <span>Fresh-Session Boundary:</span>
                 </div>
                 <p>
-                  Scaffold project assets before starting the host session that should consume them. Replace <code className="font-mono bg-white/80 px-1 py-0.5 rounded border border-amber-300 text-amber-900 font-semibold">codex</code> with the coding host you actually use. The scaffold command installs repository assets, but this does not prove the running host has reloaded them., not that an already-running host retroactively reloaded those files.
+                  Scaffold project assets before starting the host session that should consume them. Replace <code className="font-mono bg-white/80 px-1 py-0.5 rounded border border-amber-300 text-amber-900 font-semibold">codex</code> with the coding host you actually use. The scaffold command installs repository assets; restart the host session to ensure it loads them.
                 </p>
               </div>
 
