@@ -618,7 +618,7 @@ export function PromoOverviewPage() {
                   <span>Fresh-Session Boundary:</span>
                 </div>
                 <p>
-                  Scaffold project assets before starting the host session that should consume them. Replace <code className="font-mono bg-white/80 px-1 py-0.5 rounded border border-amber-300 text-amber-900 font-semibold">codex</code> with the coding host you actually use. <code className="font-mono bg-white/80 px-1 py-0.5 rounded border border-amber-300 text-amber-900 font-semibold">asset installation</code> proves repository-side projection, not that an already-running host retroactively reloaded those files.
+                  Scaffold project assets before starting the host session that should consume them. Replace <code className="font-mono bg-white/80 px-1 py-0.5 rounded border border-amber-300 text-amber-900 font-semibold">codex</code> with the coding host you actually use. The scaffold command installs repository assets, but this does not prove the running host has reloaded them., not that an already-running host retroactively reloaded those files.
                 </p>
               </div>
 
