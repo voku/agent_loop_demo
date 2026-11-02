@@ -106,15 +106,20 @@ Keep useful lessons ──► deterministic checks ──► faster, cheaper fut
 
 ---
 
-## Current Release Proof
+## Verified Release Highlights (2 November 2026)
 
-The current coordinated graph is not just version-compatible on paper:
+The landing page is a dated overview of released functionality, **not** a second lifecycle specification. The executable contracts live in [`voku/agent-loop`](https://github.com/voku/agent-loop) and its [changelog](https://github.com/voku/agent-loop/blob/main/CHANGELOG.md).
 
-* **`voku/agent-loop 0.20.40`** ships the sparse close-out model with `voku/agent-learning 0.18.24` and `voku/agent-recall-compiler 0.25.0`.
-* **`voku/agent-loop-runner`** resolves and executes that released graph in clean-consumer proofs while keeping its broader supported Loop range.
-* **`voku/agent-ui`** has been validated against the same graph on PHP 8.3, 8.4, and 8.5, including `--prefer-lowest` and Runner-present / Runner-absent matrices.
+| Tagged version | Verified change | Important boundary |
+| --- | --- | --- |
+| `0.20.80` | Source-linked ITP context through PHPStan Agent Format | Advisory metadata; no runtime behavior change |
+| `0.20.79` | Rejects caller-controlled `standing:` pseudo-actors at owner boundaries | Does not provide standing approvals |
+| `0.20.78` | Configured-language CLI presentations of Contract approval and revision decisions | Explains available choices without making the decision |
+| `0.20.76–0.20.77` | Optional [Evidence Lab](https://github.com/voku/agent-loop/blob/main/docs/testing/evidence-lab.md) with disposable PHPUnit probes | No new mandatory CI stage; probes are not automatically regression tests |
 
-That separation is intentional: Loop owns lifecycle truth, Recall owns selection/outcome semantics, Learning owns durable evidence, Runner executes, and UI presents. Consumers do not reconstruct the workflow in parallel.
+**Evidence is not interchangeable:** a temporary probe answers a question, a maintained regression test guards an approved invariant, and Run/Session evidence records the exact candidate and observation. Successful CI is useful evidence, but it is not a substitute for checking the relevant contract and review.
+
+The previous site snapshot pinned `0.20.40` and specific Runner/UI consumer matrices. Those were historical proofs, not evidence that later tagged graphs have identical consumer validation; this page no longer presents them as current.
 
 ---
 
@@ -127,7 +132,7 @@ To maintain architectural integrity, `agent-loop` explicitly avoids doing things
 * **It does not invent human approval.** Scope changes, policy waivers, and durable guidance promotions require an explicit human decision.
 * **It does not replace project-native tools.** It does not reinvent PHPUnit, Pest, PHPStan, or PHP-CS-Fixer; it invokes them and checks their exit codes and evidence.
 * **It does not create a prompt landfill.** It rejects the `MEMORY.md` pattern where unverified notes pile up unchecked.
-* **It is not vendor-locked.** It projects instructions and assets for Codex, Claude Code, OpenCode, Copilot, Gemini CLI, and Antigravity.
+* **It is not vendor-locked.** It projects assets for Codex, Claude Code, OpenCode, Copilot, Gemini CLI, Antigravity, and Cursor. Cursor auto-detection and live runtime enforcement remain unverified; use explicit host selection.
 
 ---
 
@@ -158,7 +163,7 @@ When specialized or recovery workflows are needed:
 | `vendor/bin/agent-loop workflow plan <task-id> --file <f> ...` | Proposes a candidate Contract with mutation scope and validation plan. |
 | `vendor/bin/agent-loop workflow approve <task-id> --by <user>` | Human seal approving the Contract revision and mutation boundary. |
 | `vendor/bin/agent-loop edit '<Symbol>' -- '<intent>'` | Specialist symbol-scoped edit bundle using structural code intelligence. |
-| `vendor/bin/agent-loop board:list` / `board:show <task-id>` | Inspect and manage Git-native Markdown Kanban cards. |
+| `vendor/bin/agent-loop board card show <task-id>` | Inspect a Git-native task card. |
 | `vendor/bin/agent-loop learn proposal-approve <id>` | Promotes a reviewed finding proposal into a durable project decision. |
 | `vendor/bin/agent-loop init doctor` | Diagnostic report of host readiness, adapters, and projected assets. |
 
@@ -215,8 +220,7 @@ composer require --dev voku/agent-loop
 Start the tutorial path used by the marketing page:
 
 ```bash
-vendor/bin/agent-loop init scaffold --demo
-vendor/bin/agent-loop init install-assets --agent=codex
+vendor/bin/agent-loop init scaffold --demo --agent=codex
 vendor/bin/agent-loop init doctor
 vendor/bin/agent-loop enter DEMO-1 --format=json
 ```
@@ -241,7 +245,8 @@ Visit `http://localhost:3000` to explore:
 * **4-step everyday workflow**: `enter` → canonical next action → normal implementation → `finish`.
 * **Sparse close-out model**: machine facts stay automatic while qualitative outcomes are recorded only when actually judged.
 * **3-part architecture deep dive**: understand the lifecycle, package ownership boundaries, and sparse learning model without reproducing internal workflow phases.
-* **Current release proof**: see the released core graph and the consumer evidence behind Runner/UI compatibility.
+* **Release highlights with sources**: review dated, tagged changes without inferring optional Runner/UI compatibility from the core tag.
+* **Evidence Lab**: understand when to discard an implementation probe or promote a verified invariant into a regression test.
 
 ---
 
@@ -256,4 +261,4 @@ npm run build
 
 ## License
 
-This project is open-source software licensed under the [MIT License](LICENSE).
+This project is open-source software under the [MIT License](https://github.com/voku/agent-loop/blob/main/LICENSE).
