@@ -32,8 +32,7 @@ export function PromoOverviewPage() {
 
   const terminalCommands = [
     "composer require --dev voku/agent-loop",
-    "vendor/bin/agent-loop init scaffold --demo",
-    "vendor/bin/agent-loop init install-assets --agent=codex",
+    "vendor/bin/agent-loop init scaffold --demo --agent=codex",
     "vendor/bin/agent-loop init doctor",
     "# Start a fresh Codex session (or restart if already running)",
     "vendor/bin/agent-loop enter DEMO-1 --format=json"
@@ -66,7 +65,7 @@ export function PromoOverviewPage() {
       step: 2,
       title: "Follow the canonical next action",
       command: "command · command_template · host_work · decision_required · none",
-      description: "Execute what the kernel emitted. Do not recreate workflow phases in host prose."
+      description: "Run commands, fill model-owned templates from evidence, and show the exact decision subject only for decision_required."
     },
     {
       step: 3,
@@ -213,7 +212,7 @@ export function PromoOverviewPage() {
               {/* Badges */}
               <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 justify-start lg:justify-end">
                 <span className="px-3 py-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-xs font-mono font-bold tracking-tight shadow-2xs">
-                  agent-loop 0.20.40
+                  Release notes · Nov 2026
                 </span>
                 <span className="px-3 py-1 rounded-lg bg-slate-100 border border-slate-200/80 text-slate-800 text-xs font-mono font-bold tracking-tight shadow-2xs">
                   PHP 8.3+
@@ -537,39 +536,54 @@ export function PromoOverviewPage() {
 
           </div>
 
-          {/* CURRENT RELEASE PROOF */}
-          <div className="bg-[#eef6ff] border border-blue-200/80 rounded-3xl p-5 sm:p-6 shadow-xs">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-              <div className="max-w-xl">
+          {/* RELEASE NOTES WITH EXPLICIT REVIEW DATE */}
+          <section aria-labelledby="release-highlights" className="bg-[#eef6ff] border border-blue-200/80 rounded-3xl p-5 sm:p-6 shadow-xs">
+            <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+              <div className="max-w-2xl">
                 <div className="font-mono text-[11px] font-bold uppercase tracking-widest text-blue-700">
-                  Current release proof
+                  Source-linked release highlights · 2 Nov 2026
                 </div>
-                <h3 className="text-xl sm:text-2xl font-black tracking-tight text-slate-950 mt-1">
-                  The ecosystem consumes the same owner contracts.
+                <h3 id="release-highlights" className="text-xl sm:text-2xl font-black tracking-tight text-slate-950 mt-1">
+                  Better evidence. Clearer decisions. Fewer invented gates.
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-600 mt-1 leading-relaxed">
-                  Not a roadmap claim: the current release graph was resolved and exercised across the optional execution and control planes.
+                  Checked against the tagged 0.20.80 changelog. This is a dated snapshot,
+                  not a claim that every open pull request or optional consumer is released.
                 </p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 w-full lg:max-w-3xl">
-                <div className="bg-white border border-blue-200 rounded-2xl p-3.5">
-                  <div className="font-mono text-xs font-black text-blue-700">Core</div>
-                  <div className="font-bold text-slate-900 text-sm mt-1">agent-loop 0.20.40</div>
-                  <div className="text-[11px] text-slate-500 mt-1">Learning 0.18.24 · Recall 0.25.0</div>
-                </div>
-                <div className="bg-white border border-blue-200 rounded-2xl p-3.5">
-                  <div className="font-mono text-xs font-black text-blue-700">Runner</div>
-                  <div className="font-bold text-slate-900 text-sm mt-1">Clean consumer proof</div>
-                  <div className="text-[11px] text-slate-500 mt-1">Released 0.20.40 graph resolved and executed</div>
-                </div>
-                <div className="bg-white border border-blue-200 rounded-2xl p-3.5">
-                  <div className="font-mono text-xs font-black text-blue-700">UI</div>
-                  <div className="font-bold text-slate-900 text-sm mt-1">Coordinated dependency graph</div>
-                  <div className="text-[11px] text-slate-500 mt-1">PHP 8.3/8.4/8.5 · lowest-supported · Runner matrix</div>
-                </div>
+              <a
+                href="https://github.com/voku/agent-loop/blob/0.20.80/CHANGELOG.md"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0 inline-flex items-center gap-2 px-3 py-2 bg-white border border-blue-300 rounded-lg text-xs font-mono font-bold text-blue-800 hover:bg-blue-50 transition-colors"
+              >
+                <span>Read changelog</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2.5">
+              <div className="bg-white border border-blue-200 rounded-2xl p-3.5">
+                <div className="font-mono text-xs font-black text-blue-700">0.20.80 · Context</div>
+                <div className="font-bold text-slate-900 text-sm mt-1">Source-linked ITP guidance</div>
+                <p className="text-xs text-slate-600 mt-1 leading-relaxed">Advisory context in PHPStan Agent Format. No runtime behavior change.</p>
+              </div>
+              <div className="bg-white border border-blue-200 rounded-2xl p-3.5">
+                <div className="font-mono text-xs font-black text-blue-700">0.20.79 · Authority</div>
+                <div className="font-bold text-slate-900 text-sm mt-1">Fail-closed actor boundaries</div>
+                <p className="text-xs text-slate-600 mt-1 leading-relaxed">Rejects caller-controlled standing: pseudo-actors. No standing approvals.</p>
+              </div>
+              <div className="bg-white border border-blue-200 rounded-2xl p-3.5">
+                <div className="font-mono text-xs font-black text-blue-700">0.20.78 · Human UX</div>
+                <div className="font-bold text-slate-900 text-sm mt-1">Explain the actual decision</div>
+                <p className="text-xs text-slate-600 mt-1 leading-relaxed">Configured-language CLI decisions show scope, changes and available choices.</p>
+              </div>
+              <div className="bg-white border border-blue-200 rounded-2xl p-3.5">
+                <div className="font-mono text-xs font-black text-blue-700">0.20.76–77 · Testing</div>
+                <div className="font-bold text-slate-900 text-sm mt-1">Opt-in Evidence Lab</div>
+                <p className="text-xs text-slate-600 mt-1 leading-relaxed">Disposable PHPUnit probes stay separate from maintained regression tests.</p>
               </div>
             </div>
-          </div>
+          </section>
 
           {/* BOTTOM BANNER: TRY ONE GOVERNED TASK */}
           <div id="quickstart-cli" className="bg-[#f8fafc] border border-slate-200 rounded-3xl p-5 sm:p-7 lg:p-8 shadow-xs flex flex-col lg:flex-row items-center justify-between gap-6">
@@ -604,7 +618,7 @@ export function PromoOverviewPage() {
                   <span>Fresh-Session Boundary:</span>
                 </div>
                 <p>
-                  Project assets before starting the host session that should consume them. Replace <code className="font-mono bg-white/80 px-1 py-0.5 rounded border border-amber-300 text-amber-900 font-semibold">codex</code> with the coding host you actually use. <code className="font-mono bg-white/80 px-1 py-0.5 rounded border border-amber-300 text-amber-900 font-semibold">install-assets</code> proves repository-side projection, not that an already-running host retroactively reloaded those files.
+                  Scaffold project assets before starting the host session that should consume them. Replace <code className="font-mono bg-white/80 px-1 py-0.5 rounded border border-amber-300 text-amber-900 font-semibold">codex</code> with the coding host you actually use. The scaffold command installs repository assets; restart the host session to ensure it loads them.
                 </p>
               </div>
 
@@ -700,7 +714,7 @@ export function PromoOverviewPage() {
                 Keep the agent. Add a workflow around it.
               </div>
               <div className="text-slate-500 text-xs">
-                Grounded in released owner + consumer proofs • 23 Sep 2026
+                Updated against agent-loop 0.20.80 • 2 Nov 2026
               </div>
             </div>
           </div>

@@ -34,6 +34,11 @@ const ownerRows = [
     detail: "Derived code navigation and bounded structural context. Source code remains the source of truth."
   },
   {
+    concern: "Deterministic edit plans",
+    owner: "agent-edit",
+    detail: "Plan validation, transactional apply and post-change verification."
+  },
+  {
     concern: "Task-specific context",
     owner: "agent-recall-compiler",
     detail: "Bounded L1 briefing plus selection events as machine evidence."
@@ -250,6 +255,55 @@ status: complete`}</pre>
             </p>
           </div>
         </div>
+      </section>
+
+      <section aria-labelledby="evidence-lab" className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs space-y-5">
+        <div className="space-y-2 max-w-4xl">
+          <div className="font-mono text-xs font-bold uppercase tracking-widest text-blue-700">Optional practice · Evidence Lab</div>
+          <h2 id="evidence-lab" className="text-2xl sm:text-3xl font-black tracking-tight text-slate-950">
+            Experiments answer questions. Regression tests protect contracts.
+          </h2>
+          <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
+            Both can use PHPUnit, but they do different jobs. Do not turn every agent experiment
+            into five years of CI maintenance, and do not call a single green probe proof of correctness.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="rounded-2xl border border-blue-200 bg-blue-50/70 p-4">
+            <div className="font-bold text-blue-900">Temporary implementation probe</div>
+            <p className="mt-2 text-sm text-slate-700 leading-relaxed">
+              Run a focused, possibly failing check from an ignored task-local
+              build/evidence directory. Keep it out of the ordinary CI suite.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4">
+            <div className="font-bold text-emerald-900">Maintained regression test</div>
+            <p className="mt-2 text-sm text-slate-700 leading-relaxed">
+              Promote a check into tests/ only when approved behavior or a verified
+              invariant justifies ongoing protection and maintenance.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="font-bold text-slate-900">Execution evidence</div>
+            <p className="mt-2 text-sm text-slate-700 leading-relaxed">
+              Retain consequential observations with the exact candidate, command,
+              inputs, result, and unresolved limits in existing Run/Session records.
+            </p>
+          </div>
+        </div>
+        <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+          Probes do not grant source-edit authority outside an approved Contract.
+          They are opt-in, and the workflow adds no mandatory CI stage or new evidence schema.
+        </p>
+        <a
+          href="https://github.com/voku/agent-loop/blob/main/docs/testing/evidence-lab.md"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 text-sm font-bold text-blue-700 hover:text-blue-900 underline underline-offset-2"
+        >
+          <span>Read the Evidence Lab convention</span>
+          <ExternalLink className="w-3.5 h-3.5" />
+        </a>
       </section>
 
       <section className="bg-[#f8fafc] border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xs">
