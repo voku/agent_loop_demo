@@ -34,6 +34,11 @@ const ownerRows = [
     detail: "Derived code navigation and bounded structural context. Source code remains the source of truth."
   },
   {
+    concern: "Deterministic edit plans",
+    owner: "agent-edit",
+    detail: "Plan validation, transactional apply and post-change verification."
+  },
+  {
     concern: "Task-specific context",
     owner: "agent-recall-compiler",
     detail: "Bounded L1 briefing plus selection events as machine evidence."
