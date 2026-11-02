@@ -169,7 +169,7 @@ When specialized or recovery workflows are needed:
 
 ---
 
-## The 9 Focused Packages
+## The 10 Focused Packages
 
 `agent-loop` is an umbrella architecture composed of focused, single-responsibility packages:
 
@@ -179,6 +179,7 @@ When specialized or recovery workflows are needed:
 | **`voku/agent-kanban`** | Board & Tasks | Git-native Markdown work items, deterministic parsing, task cards. | `docs/kanban/*.md` cards & hashes |
 | **`voku/agent-session`** | Working Memory | Task-local mutable state, validation evidence, pruneable retention. | Process execution proof & exit logs |
 | **`voku/agent-map`** | Code Intelligence | Structural PHP repository maps, AST dependency graphs, caller/callee. | Symbol index & dependency graph |
+| **`voku/agent-edit`** | Deterministic Editing | Plan validation, transactional apply, and verification. | Typed edit plan and verification result |
 | **`voku/agent-recall-compiler`** | Context & Prompts | Token-budgeted prompt compilation with active, approved rules only. | Governed prompt briefing (0 landfill) |
 | **`voku/agent-learning`** | Durable Learning | Reviewable findings, proposals, and durable decision lineage. | Corroborated findings & decisions |
 | **`voku/agent-loop-runner`** | Execution Plane | Optional isolated Git worktree runner and host execution sandbox. | Worktree isolation & runner adapters |
