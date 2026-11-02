@@ -108,7 +108,7 @@ Keep useful lessons ──► deterministic checks ──► faster, cheaper fut
 
 ## Verified Release Highlights (2 November 2026)
 
-The landing page is a dated overview of released functionality, **not** a second lifecycle specification. The executable contracts live in [`voku/agent-loop`](https://github.com/voku/agent-loop) and its [changelog](https://github.com/voku/agent-loop/blob/main/CHANGELOG.md).
+The landing page is a dated overview of released functionality, **not** a second lifecycle specification. The executable contracts live in [`voku/agent-loop`](https://github.com/voku/agent-loop) and its [changelog](https://github.com/voku/agent-loop/blob/0.20.80/CHANGELOG.md).
 
 | Tagged version | Verified change | Important boundary |
 | --- | --- | --- |
@@ -261,4 +261,4 @@ npm run build
 
 ## License
 
-This project is open-source software under the [MIT License](https://github.com/voku/agent-loop/blob/main/LICENSE).
+The [agent-loop PHP package](https://github.com/voku/agent-loop) is licensed under the [MIT License](https://github.com/voku/agent-loop/blob/main/LICENSE). This demo repository does not contain a separate license declaration.
