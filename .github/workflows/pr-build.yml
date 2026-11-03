@@ -26,5 +26,14 @@ jobs:
         run: npm run lint
       - name: Production build
         run: npm run build
-      - name: Verify output
-        run: test -f dist/index.html
+      - name: Verify GitHub Pages asset paths
+        run: |
+          test -f dist/index.html
+          test -f dist/favicon.svg
+          grep -Fq 'href="/agent_loop_demo/favicon.svg"' dist/index.html
+      - name: Verify local development asset paths
+        run: |
+          GITHUB_ACTIONS=false npm run build
+          test -f dist/index.html
+          test -f dist/favicon.svg
+          grep -Fq 'href="/favicon.svg"' dist/index.html
