@@ -50,6 +50,29 @@ const ownerRows = [
   }
 ];
 
+const relatedGuides = [
+  {
+    name: "agent-graph",
+    detail: "Deterministic SQLite graph storage and query mechanics, not domain meaning."
+  },
+  {
+    name: "agent-skills",
+    detail: "Portable engineering, testing, and review guidance."
+  },
+  {
+    name: "agent-dotfiles",
+    detail: "Explicit, reversible shell configuration for coding agents."
+  },
+  {
+    name: "agent-ui",
+    detail: "Local human workbench that presents Loop-owned state."
+  },
+  {
+    name: "agent-loop-runner",
+    detail: "Optional execution plane that consumes Loop authority."
+  }
+];
+
 const learningRules = [
   {
     title: "Selection is a fact",
@@ -188,12 +211,49 @@ export function DeepDiveChapters({ onBackToOverview }: { onBackToOverview?: () =
                 {ownerRows.map((row) => (
                   <tr key={row.concern} className="align-top">
                     <td className="px-4 py-3 font-bold text-slate-900">{row.concern}</td>
-                    <td className="px-4 py-3 font-mono font-bold text-blue-700 whitespace-nowrap">{row.owner}</td>
+                    <td className="px-4 py-3 font-mono font-bold whitespace-nowrap">
+                      <a
+                        href={`https://github.com/voku/${row.owner}/blob/main/README.md`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-700 hover:text-blue-900 underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+                        aria-label={`Read the ${row.owner} repository guide`}
+                      >
+                        {row.owner} <ExternalLink className="w-3 h-3 inline-block" aria-hidden="true" />
+                      </a>
+                    </td>
                     <td className="px-4 py-3 text-slate-600 leading-relaxed">{row.detail}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+
+          <div className="border-t border-slate-200 pt-5 space-y-3">
+            <div>
+              <h3 className="text-base font-bold text-slate-900">Related project guides</h3>
+              <p className="mt-1 text-sm text-slate-600 leading-relaxed">
+                These tools support the workflow, but they do not all own lifecycle policy.
+                Follow each repository README to find the actual implementation files.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {relatedGuides.map((guide) => (
+                <a
+                  key={guide.name}
+                  href={`https://github.com/voku/${guide.name}/blob/main/README.md`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 hover:border-blue-300 hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+                >
+                  <span className="flex items-center gap-2 font-mono font-bold text-sm text-blue-700">
+                    {guide.name}
+                    <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+                  </span>
+                  <span className="mt-1 block text-xs text-slate-600 leading-relaxed">{guide.detail}</span>
+                </a>
+              ))}
+            </div>
           </div>
         </div>
       </section>
