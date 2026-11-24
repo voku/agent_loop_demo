@@ -33,7 +33,8 @@ export function PromoOverviewPage() {
   const terminalCommands = [
     "composer require --dev voku/agent-loop",
     "vendor/bin/agent-loop init scaffold --demo --agent=codex",
-    "vendor/bin/agent-loop init doctor",
+    "vendor/bin/agent-loop init host-status --agent=codex --format=json",
+    "# Follow the reported setup actions before entering the task",
     "# Start a fresh Codex session (or restart if already running)",
     "vendor/bin/agent-loop enter DEMO-1 --format=json"
   ];
@@ -205,6 +206,14 @@ export function PromoOverviewPage() {
               <p className="text-sm sm:text-base md:text-lg text-slate-600 leading-relaxed font-normal">
                 A local-first PHP workflow around the coding agent you already use: durable task intent, bounded context, explicit evidence, and learning only when the evidence says there is something worth keeping.
               </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <a href="https://github.com/voku/agent-loop/blob/main/docs/quick-start.md" className="px-4 py-2 rounded-lg bg-blue-700 text-white font-semibold text-sm hover:bg-blue-800 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-700">
+                  Start your first governed task
+                </a>
+                <a href="https://github.com/voku/agent-loop/releases/latest" className="text-sm font-semibold text-blue-700 underline underline-offset-2">
+                  Latest release
+                </a>
+              </div>
             </div>
 
             {/* Badges & Handwritten Script */}
@@ -212,7 +221,7 @@ export function PromoOverviewPage() {
               {/* Badges */}
               <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 justify-start lg:justify-end">
                 <span className="px-3 py-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-xs font-mono font-bold tracking-tight shadow-2xs">
-                  Release notes · Nov 2026
+                  Historical release notes · 2 Nov 2026
                 </span>
                 <span className="px-3 py-1 rounded-lg bg-slate-100 border border-slate-200/80 text-slate-800 text-xs font-mono font-bold tracking-tight shadow-2xs">
                   PHP 8.3+
@@ -618,7 +627,7 @@ export function PromoOverviewPage() {
                   <span>Fresh-Session Boundary:</span>
                 </div>
                 <p>
-                  Scaffold project assets before starting the host session that should consume them. Replace <code className="font-mono bg-white/80 px-1 py-0.5 rounded border border-amber-300 text-amber-900 font-semibold">codex</code> with the coding host you actually use. The scaffold command installs repository assets; restart the host session to ensure it loads them.
+                  Scaffold project assets and follow the reported setup actions before starting the host session that should consume them. Replace <code className="font-mono bg-white/80 px-1 py-0.5 rounded border border-amber-300 text-amber-900 font-semibold">codex</code> with the coding host you actually use. The scaffold command installs repository assets; start a fresh host session so it can consume them. Projection alone does not prove runtime consumption.
                 </p>
               </div>
 
@@ -714,7 +723,7 @@ export function PromoOverviewPage() {
                 Keep the agent. Add a workflow around it.
               </div>
               <div className="text-slate-500 text-xs">
-                Updated against agent-loop 0.20.80 • 2 Nov 2026
+                Historical release snapshot: 0.20.80 • 2 Nov 2026
               </div>
             </div>
           </div>
