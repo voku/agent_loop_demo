@@ -31,6 +31,57 @@ jobs:
           test -f dist/index.html
           test -f dist/favicon.svg
           grep -Fq 'href="/agent_loop_demo/favicon.svg"' dist/index.html
+      - name: Assert crawlable built entrypoint
+        run: |
+          python - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+
+          class Entry(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.in_body = False
+                  self.in_main = False
+                  self.main_text = []
+                  self.main_links = []
+                  self.canonical = []
+                  self.meta = {}
+              def handle_starttag(self, tag, attrs):
+                  attrs = dict(attrs)
+                  if tag == 'body':
+                      self.in_body = True
+                  if tag == 'main' and self.in_body:
+                      self.in_main = True
+                  if tag == 'a' and self.in_main:
+                      self.main_links.append(attrs.get('href'))
+                  if tag == 'link' and attrs.get('rel') == 'canonical':
+                      self.canonical.append(attrs.get('href'))
+                  if tag == 'meta':
+                      key = attrs.get('name') or attrs.get('property')
+                      if key:
+                          self.meta[key] = attrs.get('content')
+              def handle_endtag(self, tag):
+                  if tag == 'main':
+                      self.in_main = False
+                  if tag == 'body':
+                      self.in_body = False
+              def handle_data(self, data):
+                  if self.in_main:
+                      self.main_text.append(data)
+
+          page = Entry()
+          page.feed(Path('dist/index.html').read_text())
+          text = ' '.join(page.main_text)
+          assert 'Agent Loop' in text and 'composer require --dev voku/agent-loop' in text
+          assert 'https://github.com/voku/agent-loop/blob/main/docs/quick-start.md' in page.main_links
+          assert 'https://github.com/voku/agent-loop/releases/latest' in page.main_links
+          assert 'https://github.com/voku/agent-loop' in page.main_links
+          assert page.canonical == ['https://voku.github.io/agent_loop_demo/']
+          assert page.meta['og:url'] == page.canonical[0]
+          assert page.meta.get('description') and page.meta.get('og:title')
+          assert page.meta.get('robots') == 'index, follow'
+          print('Built HTML contains product summary, install command, CTA and preserved metadata.')
+          PY
       - name: Verify local development asset paths
         run: |
           GITHUB_ACTIONS=false npm run build
